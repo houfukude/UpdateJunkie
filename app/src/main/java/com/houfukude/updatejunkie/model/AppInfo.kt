@@ -6,6 +6,8 @@ data class AppInfo(
     val packageName: String,
     val label: String,
     val icon: Drawable?,
+    val versionName: String?,
+    val versionCode: Long,
     val installerPackageName: String?,
     val installerLabel: String?,
     val isSystemApp: Boolean,

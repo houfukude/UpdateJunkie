@@ -1,8 +1,10 @@
 package com.houfukude.updatejunkie.viewmodel
 
 import android.app.Application
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.houfukude.updatejunkie.data.AppLoadResult
 import com.houfukude.updatejunkie.data.AppRepository
 import com.houfukude.updatejunkie.data.SettingsRepository
 import com.houfukude.updatejunkie.model.AppInfo
@@ -20,7 +22,14 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
 
     private val _allApps = MutableStateFlow<List<AppInfo>>(emptyList())
     private val _isLoading = MutableStateFlow(true)
+    private val _isRefreshing = MutableStateFlow(false)
+    private val _loadProgress = MutableStateFlow(0f)
+    private val _loadProgressText = MutableStateFlow("")
     private val _error = MutableStateFlow<String?>(null)
+
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+    val loadProgress: StateFlow<Float> = _loadProgress.asStateFlow()
+    val loadProgressText: StateFlow<String> = _loadProgressText.asStateFlow()
 
     val selectedInstallers: StateFlow<Set<String?>> = settingsRepository.selectedInstallers
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
@@ -75,6 +84,9 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppListUiState.Loading)
 
+    private val _isShizukuInstalled = MutableStateFlow(false)
+    val isShizukuInstalled: StateFlow<Boolean> = _isShizukuInstalled.asStateFlow()
+
     private val _isShizukuAvailable = MutableStateFlow(false)
     val isShizukuAvailable: StateFlow<Boolean> = _isShizukuAvailable.asStateFlow()
 
@@ -87,6 +99,7 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun refreshStatus() {
+        _isShizukuInstalled.value = ShizukuManager.isInstalled(getApplication())
         _isShizukuAvailable.value = ShizukuManager.isAvailable()
         _hasShizukuPermission.value = ShizukuManager.hasPermission()
     }
@@ -94,13 +107,49 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     fun loadApps() {
         viewModelScope.launch {
             _isLoading.value = true
+            _isRefreshing.value = true
+            _loadProgress.value = 0f
+            _loadProgressText.value = ""
             _error.value = null
+            _allApps.value = emptyList() // 开始加载前清空列表
+
+            var totalCount = 0
+            var loadedCount = 0
+            
             try {
-                _allApps.value = repository.getInstalledApps(includeSystemApps = true)
+                repository.getInstalledAppsFlow(includeSystemApps = true)
+                    .collect { result ->
+                        when (result) {
+                            is AppLoadResult.Total -> {
+                                totalCount = result.count
+                                _loadProgressText.value = "0 / $totalCount"
+                            }
+                            is AppLoadResult.App -> {
+                                val appInfo = result.app
+                                // 增量添加并重新排序
+                                val currentList = _allApps.value.toMutableList()
+                                currentList.add(appInfo)
+                                _allApps.value = currentList.sortedBy { it.label.lowercase() }
+                                
+                                loadedCount++
+                                if (totalCount > 0) {
+                                    _loadProgress.value = loadedCount.toFloat() / totalCount
+                                    _loadProgressText.value = "$loadedCount / $totalCount"
+                                }
+
+                                // 一旦获取到第一个应用，就取消 Loading 状态以展示界面
+                                if (_isLoading.value) {
+                                    _isLoading.value = false
+                                }
+                            }
+                        }
+                    }
+                Toast.makeText(getApplication(), "应用列表加载完成", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Unknown error"
             } finally {
                 _isLoading.value = false
+                _isRefreshing.value = false
             }
         }
     }

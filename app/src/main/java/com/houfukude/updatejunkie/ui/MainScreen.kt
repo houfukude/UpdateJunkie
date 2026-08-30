@@ -1,5 +1,7 @@
 package com.houfukude.updatejunkie.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
@@ -9,7 +11,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.houfukude.updatejunkie.model.AppInfo
 import com.houfukude.updatejunkie.ui.components.AppList
@@ -29,9 +34,14 @@ fun MainScreen(
     viewModel: AppListViewModel = viewModel(),
     onSettingsClick: () -> Unit
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+    val isShizukuInstalled by viewModel.isShizukuInstalled.collectAsState()
     val isShizukuAvailable by viewModel.isShizukuAvailable.collectAsState()
     val hasShizukuPermission by viewModel.hasShizukuPermission.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val loadProgress by viewModel.loadProgress.collectAsState()
+    val loadProgressText by viewModel.loadProgressText.collectAsState()
 
     val availableInstallers by viewModel.availableInstallers.collectAsState()
     val selectedInstallers by viewModel.selectedInstallers.collectAsState()
@@ -42,8 +52,12 @@ fun MainScreen(
 
     MainScreenContent(
         uiState = uiState,
+        isShizukuInstalled = isShizukuInstalled,
         isShizukuAvailable = isShizukuAvailable,
         hasShizukuPermission = hasShizukuPermission,
+        isRefreshing = isRefreshing,
+        loadProgress = loadProgress,
+        loadProgressText = loadProgressText,
         availableInstallers = availableInstallers,
         selectedInstallers = selectedInstallers,
         showSystem = showSystem,
@@ -55,7 +69,11 @@ fun MainScreen(
         onToggleDisabled = { viewModel.toggleDisabledFilter() },
         onRefresh = { viewModel.loadApps() },
         onSettingsClick = onSettingsClick,
-        onRequestShizukuPermission = { viewModel.requestShizukuPermission() }
+        onRequestShizukuPermission = { viewModel.requestShizukuPermission() },
+        onDownloadShizuku = {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://shizuku.rikka.app/download/"))
+            context.startActivity(intent)
+        }
     )
 }
 
@@ -63,8 +81,12 @@ fun MainScreen(
 @Composable
 fun MainScreenContent(
     uiState: AppListUiState,
+    isShizukuInstalled: Boolean,
     isShizukuAvailable: Boolean,
     hasShizukuPermission: Boolean,
+    isRefreshing: Boolean,
+    loadProgress: Float,
+    loadProgressText: String,
     availableInstallers: List<String?>,
     selectedInstallers: Set<String?>,
     showSystem: Boolean,
@@ -76,7 +98,8 @@ fun MainScreenContent(
     onToggleDisabled: () -> Unit,
     onRefresh: () -> Unit,
     onSettingsClick: () -> Unit,
-    onRequestShizukuPermission: () -> Unit
+    onRequestShizukuPermission: () -> Unit,
+    onDownloadShizuku: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -87,7 +110,17 @@ fun MainScreenContent(
                         Icon(Icons.Default.Refresh, contentDescription = "刷新")
                     }
                     Box {
-                        IconButton(onClick = onToggleFilterMenu) {
+                        IconButton(
+                            onClick = onToggleFilterMenu,
+                            colors = if (showFilterMenu) {
+                                IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            } else {
+                                IconButtonDefaults.iconButtonColors()
+                            }
+                        ) {
                             Icon(Icons.Default.FilterList, contentDescription = "筛选")
                         }
                         DropdownMenu(
@@ -95,34 +128,24 @@ fun MainScreenContent(
                             onDismissRequest = onToggleFilterMenu
                         ) {
                             DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Checkbox(checked = showSystem, onCheckedChange = null)
-                                        Text("显示系统应用")
-                                    }
-                                },
+                                text = { Text("显示系统应用") },
+                                trailingIcon = { Checkbox(checked = showSystem, onCheckedChange = null) },
                                 onClick = onToggleSystem
                             )
                             DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Checkbox(checked = showDisabled, onCheckedChange = null)
-                                        Text("显示已禁用应用")
-                                    }
-                                },
+                                text = { Text("显示已禁用应用") },
+                                trailingIcon = { Checkbox(checked = showDisabled, onCheckedChange = null) },
                                 onClick = onToggleDisabled
                             )
                             HorizontalDivider()
                             availableInstallers.forEach { label ->
                                 DropdownMenuItem(
-                                    text = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Checkbox(
-                                                checked = selectedInstallers.contains(label),
-                                                onCheckedChange = null
-                                            )
-                                            Text(label ?: "未知")
-                                        }
+                                    text = { Text(label ?: "未知") },
+                                    trailingIcon = {
+                                        Checkbox(
+                                            checked = selectedInstallers.contains(label),
+                                            onCheckedChange = null
+                                        )
                                     },
                                     onClick = { onToggleInstaller(label) }
                                 )
@@ -136,25 +159,85 @@ fun MainScreenContent(
             )
         }
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding)) {
-            ShizukuStatusCard(
-                isAvailable = isShizukuAvailable,
-                hasPermission = hasShizukuPermission,
-                onRequestPermission = onRequestShizukuPermission
-            )
+        val header = @Composable {
+            Column {
+                ShizukuStatusCard(
+                    isInstalled = isShizukuInstalled,
+                    isAvailable = isShizukuAvailable,
+                    hasPermission = hasShizukuPermission,
+                    onRequestPermission = onRequestShizukuPermission,
+                    onDownloadClick = onDownloadShizuku
+                )
 
+                if (isRefreshing) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "正在扫描应用...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                            Text(
+                                text = loadProgressText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
+                        LinearProgressIndicator(
+                            progress = { loadProgress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            strokeCap = StrokeCap.Round
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+            }
+        }
+
+        Box(modifier = Modifier.padding(innerPadding)) {
             when (val state = uiState) {
                 is AppListUiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                    Column {
+                        header()
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
                     }
                 }
+
                 is AppListUiState.Success -> {
-                    AppList(apps = state.apps)
+                    AppList(
+                        apps = state.apps,
+                        headerContent = header
+                    )
                 }
+
                 is AppListUiState.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = "Error: ${state.message}", color = MaterialTheme.colorScheme.error)
+                    Column {
+                        header()
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Error: ${state.message}",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             }
@@ -183,6 +266,8 @@ fun MainScreenPreview() {
                         packageName = "com.example.app1",
                         label = "Google Play App",
                         icon = null,
+                        versionName = "2.1.0",
+                        versionCode = 210,
                         installerPackageName = "com.android.vending",
                         installerLabel = "Google Play Store",
                         isSystemApp = false,
@@ -194,6 +279,8 @@ fun MainScreenPreview() {
                         packageName = "com.example.app2",
                         label = "System App",
                         icon = null,
+                        versionName = "14",
+                        versionCode = 140,
                         installerPackageName = null,
                         installerLabel = null,
                         isSystemApp = true,
@@ -205,6 +292,8 @@ fun MainScreenPreview() {
                         packageName = "com.example.app3",
                         label = "Disabled App",
                         icon = null,
+                        versionName = "0.9b",
+                        versionCode = 9,
                         installerPackageName = "com.coolapk.market",
                         installerLabel = "Coolapk",
                         isSystemApp = false,
@@ -214,8 +303,12 @@ fun MainScreenPreview() {
                     )
                 )
             ),
+            isShizukuInstalled = true,
             isShizukuAvailable = true,
             hasShizukuPermission = false,
+            isRefreshing = true,
+            loadProgress = 0.5f,
+            loadProgressText = "50 / 100",
             availableInstallers = listOf("Google Play Store", "Coolapk"),
             selectedInstallers = emptySet(),
             showSystem = true,
@@ -227,7 +320,8 @@ fun MainScreenPreview() {
             onToggleDisabled = {},
             onRefresh = {},
             onSettingsClick = {},
-            onRequestShizukuPermission = {}
+            onRequestShizukuPermission = {},
+            onDownloadShizuku = {}
         )
     }
 }
@@ -245,8 +339,12 @@ fun FilterMenuPreview() {
     UpdateJunkieTheme {
         MainScreenContent(
             uiState = AppListUiState.Success(emptyList()),
+            isShizukuInstalled = true,
             isShizukuAvailable = true,
             hasShizukuPermission = true,
+            isRefreshing = false,
+            loadProgress = 1.0f,
+            loadProgressText = "100 / 100",
             availableInstallers = listOf("Google Play Store", "Coolapk", "ADB 安装"),
             selectedInstallers = setOf("Coolapk"),
             showSystem = true,
@@ -258,7 +356,8 @@ fun FilterMenuPreview() {
             onToggleDisabled = {},
             onRefresh = {},
             onSettingsClick = {},
-            onRequestShizukuPermission = {}
+            onRequestShizukuPermission = {},
+            onDownloadShizuku = {}
         )
     }
 }

@@ -7,8 +7,11 @@ import androidx.annotation.ColorRes
 import com.houfukude.updatejunkie.R
 
 object MarketUtils {
+    const val SYSTEM_APP_INSTALLER = "system_app"
+
     private val MARKET_MAP = mapOf(
         "com.android.vending" to "Google Play",
+        SYSTEM_APP_INSTALLER to "系统应用",
         "com.google.android.packageinstaller" to "Package Installer",
         "com.coolapk.market" to "Coolapk",
         "com.xiaomi.market" to "Xiaomi Market",
@@ -35,7 +38,8 @@ object MarketUtils {
     @ColorRes
     fun getMarketColor(installerPackageName: String?): Int? {
         return when (installerPackageName) {
-            "com.android.vending" -> null
+            "com.android.vending",
+            SYSTEM_APP_INSTALLER -> null
             "com.google.android.packageinstaller" -> R.color.item_market_other_bg
 
             "com.coolapk.market",
