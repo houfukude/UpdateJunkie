@@ -6,9 +6,16 @@ import android.net.Uri
 import androidx.annotation.ColorRes
 import com.houfukude.updatejunkie.R
 
+/**
+ * 应用市场 / 安装来源相关的工具类。
+ *
+ * 提供安装来源包名到友好名称、列表背景色、跳转 Intent 的映射。
+ */
 object MarketUtils {
+    /** 系统预装应用使用的虚拟安装来源标识（并非真实包名）。 */
     const val SYSTEM_APP_INSTALLER = "system_app"
 
+    /** 已知安装来源包名与其展示名称的映射表。 */
     private val MARKET_MAP = mapOf(
         "com.android.vending" to "Google Play",
         SYSTEM_APP_INSTALLER to "系统应用",
@@ -30,11 +37,23 @@ object MarketUtils {
         "com.microsoft.emmx" to "Microsoft Edge"
     )
 
+    /**
+     * 将安装来源包名转换为用于展示的友好名称。
+     *
+     * @param installerPackageName 安装来源包名，为 null 表示未知来源
+     * @return 已知市场返回映射名称；未知来源返回 "Unknown"；未收录的包名原样返回
+     */
     fun getMarketLabel(installerPackageName: String?): String {
         if (installerPackageName == null) return "Unknown"
         return MARKET_MAP[installerPackageName] ?: installerPackageName
     }
 
+    /**
+     * 根据安装来源获取应用列表项的底色资源。
+     *
+     * @param installerPackageName 安装来源包名
+     * @return 颜色资源 ID；对 Google Play、系统应用等主流来源返回 null（使用默认背景）
+     */
     @ColorRes
     fun getMarketColor(installerPackageName: String?): Int? {
         return when (installerPackageName) {
@@ -54,6 +73,15 @@ object MarketUtils {
         }
     }
 
+    /**
+     * 构造跳转到对应应用市场详情页的 Intent。
+     *
+     * 对酷安、小米、华为使用其私有 Scheme 直达，其余来源统一使用标准的 `market://` 协议。
+     *
+     * @param packageName 目标应用的包名
+     * @param installerPackageName 安装来源包名，决定跳转到哪个市场
+     * @return 可用于 `startActivity` 的 [Intent]
+     */
     fun getMarketIntent(packageName: String, installerPackageName: String?): Intent {
         return when (installerPackageName) {
             "com.coolapk.market" -> {
@@ -75,6 +103,15 @@ object MarketUtils {
         }
     }
 
+    /**
+     * 启动应用市场详情页；若无任何可处理的市场应用，则回退到浏览器打开 Play 商店网页版。
+     *
+     * 整个过程静默失败：若浏览器也无法打开，则不做任何处理。
+     *
+     * @param context 用于启动 Activity 的上下文
+     * @param packageName 目标应用的包名
+     * @param installerPackageName 安装来源包名
+     */
     fun launchMarket(context: Context, packageName: String, installerPackageName: String?) {
         try {
             val intent = getMarketIntent(packageName, installerPackageName).apply {

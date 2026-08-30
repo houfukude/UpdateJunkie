@@ -12,13 +12,51 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 
+/**
+ * 应用列表加载过程中的流式结果，用于向 UI 上报进度。
+ *
+ * @see AppLoadResult.Total 首个发射项，携带待加载的应用总数
+ * @see AppLoadResult.App 每解析完一个应用发射一次
+ */
 sealed class AppLoadResult {
+    /**
+     * 加载开始时发射，携带符合条件的应用总数。
+     *
+     * @property count 需要加载的应用总数量
+     */
     data class Total(val count: Int) : AppLoadResult()
+
+    /**
+     * 每解析完一个应用后发射。
+     *
+     * @property app 已解析完成的应用信息
+     */
     data class App(val app: AppInfo) : AppLoadResult()
 }
 
+/**
+ * 应用数据源仓库，负责从系统 PackageManager 及 Shizuku 中采集应用信息。
+ *
+ * 所有耗时操作均在 [Dispatchers.IO] 上执行。
+ *
+ * @property context 应用上下文，用于获取 PackageManager
+ */
 class AppRepository(private val context: Context) {
 
+    /**
+     * 以流式方式获取设备上已安装的应用列表。
+     *
+     * 会先发射 [AppLoadResult.Total] 告知总数，随后逐个发射 [AppLoadResult.App]，
+     * 便于 UI 实时展示加载进度。
+     *
+     * 安装来源与用户信息的获取策略：
+     * - 系统应用：直接使用固定标识与 UID 推算的用户 ID，不执行 dumpsys；
+     * - 普通应用：优先通过 Shizuku 执行一次 `dumpsys package` 同时解析出安装来源与用户列表，
+     *   若 Shizuku 不可用则回退到 PackageManager。
+     *
+     * @param includeSystemApps 是否包含系统应用，默认 true（列表过滤由上层负责）
+     * @return 发射 [AppLoadResult] 的冷流，运行在 [Dispatchers.IO] 上
+     */
     fun getInstalledAppsFlow(includeSystemApps: Boolean = true): Flow<AppLoadResult> = flow {
         val pm = context.packageManager
         val flags = PackageManager.GET_META_DATA or
@@ -95,7 +133,16 @@ class AppRepository(private val context: Context) {
         }
     }.flowOn(Dispatchers.IO)
 
-    /** 当 Shizuku 无权限或未提供时，回退到 PackageManager 获取安装来源 */
+    /**
+     * 当 Shizuku 无权限或未提供时，回退到 PackageManager 获取安装来源包名。
+     *
+     * Android R（API 30）及以上使用 `getInstallSourceInfo`，以下使用已废弃的
+     * `getInstallerPackageName`。
+     *
+     * @param pm 系统 PackageManager 实例
+     * @param packageName 目标应用包名
+     * @return 安装来源包名；获取失败或与应用商店无关时返回 null
+     */
     private fun getInstallerPackageName(pm: PackageManager, packageName: String): String? {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

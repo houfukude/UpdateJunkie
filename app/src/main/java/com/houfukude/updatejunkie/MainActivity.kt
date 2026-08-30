@@ -17,19 +17,36 @@ import com.houfukude.updatejunkie.ui.SettingsScreen
 import com.houfukude.updatejunkie.ui.theme.UpdateJunkieTheme
 import rikka.shizuku.Shizuku
 
+/**
+ * 应用唯一入口 Activity，承载整个 Compose 界面。
+ *
+ * 职责：
+ * - 根据持久化的主题配置决定深浅色；
+ * - 在 Main / Settings 两个页面间切换并处理返回键；
+ * - 注册与注销 Shizuku 的状态监听。
+ */
 class MainActivity : ComponentActivity() {
 
+    /** 应用列表页的 ViewModel。 */
     private val viewModel: AppListViewModel by viewModels()
+    /** 设置页的 ViewModel。 */
     private val settingsViewModel: SettingsViewModel by viewModels()
 
+    /** Shizuku Binder 连接建立时的回调，用于刷新授权状态。 */
     private val binderReceivedListener = Shizuku.OnBinderReceivedListener {
         viewModel.refreshStatus()
     }
 
+    /** Shizuku 授权结果回调（无论同意或拒绝），用于刷新授权状态。 */
     private val permissionResultListener = Shizuku.OnRequestPermissionResultListener { _, _ ->
         viewModel.refreshStatus()
     }
 
+    /**
+     * Activity 创建入口：启用边到边显示、注册 Shizuku 监听并挂载 Compose 内容。
+     *
+     * @param savedInstanceState 重建时保存的状态，可为 null
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -66,6 +83,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Activity 销毁时注销 Shizuku 监听，避免内存泄漏。 */
     override fun onDestroy() {
         super.onDestroy()
         Shizuku.removeBinderReceivedListener(binderReceivedListener)

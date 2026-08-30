@@ -19,6 +19,15 @@ import com.houfukude.updatejunkie.data.ThemeConfig
 import com.houfukude.updatejunkie.ui.theme.UpdateJunkieTheme
 import com.houfukude.updatejunkie.viewmodel.SettingsViewModel
 
+/**
+ * 设置页。
+ *
+ * 提供语言、主题、关于三项入口，其中主题项可弹出单选对话框实时切换。
+ * 语言与关于暂未实现，点击无响应。
+ *
+ * @param viewModel 设置页的 ViewModel，负责主题配置的读写
+ * @param onBack 点击返回箭头时的回调
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -98,6 +107,13 @@ fun SettingsScreen(
     }
 }
 
+/**
+ * 主题选择对话框中的单个单选项。
+ *
+ * @param text 选项文案
+ * @param selected 是否为当前选中项
+ * @param onClick 选中该选项时的回调
+ */
 @Composable
 private fun ThemeOption(
     text: String,
@@ -127,6 +143,12 @@ private fun ThemeOption(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * 设置页预览。
+ *
+ * 由于 [SettingsScreen] 依赖 ViewModel，此处仅保留空占位，
+ * 实际效果请在真机或模拟器上预览。
+ */
 @Preview(showBackground = true)
 @Composable
 fun SettingsScreenPreview() {

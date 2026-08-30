@@ -23,11 +23,26 @@ import com.houfukude.updatejunkie.ui.theme.UpdateJunkieTheme
 import com.houfukude.updatejunkie.viewmodel.AppListUiState
 import com.houfukude.updatejunkie.viewmodel.AppListViewModel
 
+/**
+ * 应用内可切换的页面。
+ *
+ * @property Main 应用列表面
+ * @property Settings 设置页
+ */
 enum class Screen {
     Main,
     Settings
 }
 
+/**
+ * 应用列表页的有状态入口。
+ *
+ * 负责收集 [AppListViewModel] 暴露的各项状态、持有筛选菜单的展开状态，
+ * 并将所有交互事件转发给 ViewModel，最终委托给无状态的 [MainScreenContent] 渲染。
+ *
+ * @param viewModel 应用列表页的 ViewModel
+ * @param onSettingsClick 点击工具栏设置图标时的回调
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
@@ -77,6 +92,34 @@ fun MainScreen(
     )
 }
 
+/**
+ * 应用列表页的无状态实现，便于预览与测试。
+ *
+ * 顶部工具栏提供刷新、筛选（系统应用 / 已禁用 / 安装来源）与设置入口；
+ * 内容区根据 [uiState] 分别展示加载中、应用列表或错误提示。
+ * 顶部固定的头部区域包含 Shizuku 状态卡片与加载进度条。
+ *
+ * @param uiState 列表的加载状态
+ * @param isShizukuInstalled Shizuku 是否已安装
+ * @param isShizukuAvailable Shizuku 服务是否在运行
+ * @param hasShizukuPermission 是否已获得 Shizuku 授权
+ * @param isRefreshing 是否正在加载应用
+ * @param loadProgress 加载进度，取值 0f ~ 1f
+ * @param loadProgressText 加载进度文案
+ * @param availableInstallers 可选的安装来源标签列表
+ * @param selectedInstallers 已勾选的安装来源标签集合
+ * @param showSystem 是否显示系统应用
+ * @param showDisabled 是否显示已禁用应用
+ * @param showFilterMenu 筛选下拉菜单是否展开
+ * @param onToggleFilterMenu 展开 / 收起筛选菜单
+ * @param onToggleInstaller 勾选或取消某个安装来源
+ * @param onToggleSystem 切换"显示系统应用"
+ * @param onToggleDisabled 切换"显示已禁用应用"
+ * @param onRefresh 触发重新加载应用列表
+ * @param onSettingsClick 跳转设置页
+ * @param onRequestShizukuPermission 请求 Shizuku 授权
+ * @param onDownloadShizuku 跳转 Shizuku 下载页
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreenContent(
@@ -254,6 +297,7 @@ fun MainScreenContent(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/** 加载中（进度 50%）且 Shizuku 未授权时的列表面预览。 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
@@ -332,6 +376,7 @@ fun MainScreenPreview() {
 
 
 
+/** 筛选菜单展开且已勾选"酷安"时的列表面预览。 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable

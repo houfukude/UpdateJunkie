@@ -30,6 +30,15 @@ import com.houfukude.updatejunkie.model.AppInfo
 import com.houfukude.updatejunkie.ui.theme.UpdateJunkieTheme
 import com.houfukude.updatejunkie.utils.MarketUtils
 
+/**
+ * 可滚动的应用列表。
+ *
+ * 列表项以 `包名 + userId` 作为 key，保证多用户下同一包名的多个条目互不冲突。
+ *
+ * @param apps 待展示的应用列表
+ * @param modifier 列表容器修饰符
+ * @param headerContent 置顶的头部内容（如 Shizuku 状态卡片与加载进度），为 null 时不显示
+ */
 @Composable
 fun AppList(
     apps: List<AppInfo>,
@@ -48,6 +57,14 @@ fun AppList(
     }
 }
 
+/**
+ * 单个应用列表项。
+ *
+ * 背景色按优先级区分：已禁用 > 系统应用 > 非主用户 > ADB 安装 > 安装来源色。
+ * 点击条目跳转到对应应用市场详情页，点击右侧箭头跳转到系统应用详情页。
+ *
+ * @param app 该条目对应的应用信息
+ */
 @Composable
 fun AppItem(app: AppInfo) {
     val context = LocalContext.current
@@ -170,6 +187,7 @@ fun AppItem(app: AppInfo) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/** 普通应用与系统应用两种条目的样式预览。 */
 @Preview(showBackground = true)
 @Composable
 fun AppItemPreview() {
@@ -209,6 +227,7 @@ fun AppItemPreview() {
     }
 }
 
+/** 应用列表（无头部内容）的整体预览。 */
 @Preview(showBackground = true)
 @Composable
 fun AppListPreview() {

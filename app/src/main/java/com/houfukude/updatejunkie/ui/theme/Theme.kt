@@ -18,7 +18,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.houfukude.updatejunkie.R
 
-// Set of Material typography styles to start with
+/**
+ * 应用全局排版（Typography）配置。
+ *
+ * 目前仅覆盖 bodyLarge，其余样式沿用 Material3 默认值。
+ */
 val Typography = Typography(
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
@@ -45,6 +49,16 @@ val Typography = Typography(
     */
 )
 
+/**
+ * 应用主题容器，为内容提供统一的配色与排版。
+ *
+ * 配色优先级：Android 12+ 且开启动态取色时使用系统壁纸取色，
+ * 否则使用 `colors.xml` 中定义的品牌色构建亮 / 暗色方案。
+ *
+ * @param darkTheme 是否使用暗色主题，默认跟随系统
+ * @param dynamicColor 是否启用动态取色（仅 Android 12+ 生效），默认 true
+ * @param content 主题包裹的内容
+ */
 @Composable
 fun UpdateJunkieTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

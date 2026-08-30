@@ -11,6 +11,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.houfukude.updatejunkie.ui.theme.UpdateJunkieTheme
 
+/**
+ * 展示 Shizuku 当前状态并引导用户完成安装 / 授权的卡片。
+ *
+ * 卡片背景色随状态变化：未安装为中性色、已授权为主色、未授权为错误色。
+ * 仅在需要用户操作时才显示按钮：未安装显示"去下载"，
+ * 服务已运行但未授权显示"请求授权"。
+ *
+ * @param isInstalled Shizuku 应用是否已安装
+ * @param isAvailable Shizuku 服务是否正在运行
+ * @param hasPermission 本应用是否已获得授权
+ * @param onRequestPermission 点击"请求授权"时的回调
+ * @param onDownloadClick 点击"去下载"时的回调，通常跳转 Shizuku 官网
+ */
 @Composable
 fun ShizukuStatusCard(
     isInstalled: Boolean,
@@ -83,6 +96,7 @@ fun ShizukuStatusCard(
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+/** 卡片四种典型状态（已授权 / 未授权 / 服务未运行 / 未安装）的预览。 */
 @Preview(showBackground = true)
 @Composable
 fun ShizukuStatusCardPreview() {

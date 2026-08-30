@@ -12,40 +12,71 @@ import com.houfukude.updatejunkie.shizuku.ShizukuManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+/**
+ * 应用列表页的 ViewModel。
+ *
+ * 负责：加载已安装应用（含进度上报）、维护 Shizuku 状态、管理筛选条件，
+ * 并将"全量应用 + 筛选条件"合并为 UI 可直接消费的 [AppListUiState]。
+ *
+ * @param application 应用实例，用于创建 [AppRepository] 与 [SettingsRepository]
+ */
 class AppListViewModel(application: Application) : AndroidViewModel(application) {
+    /** 应用数据来源仓库。 */
     private val repository = AppRepository(application)
+    /** 筛选条件持久化仓库。 */
     private val settingsRepository = SettingsRepository(application)
 
     companion object {
+        /** ADB / 命令行安装的应用在筛选器中使用的统一标签。 */
         const val ADB_INSTALLER = "ADB 安装"
     }
 
+    /** 全量应用列表（未过滤），按名称升序维护。 */
     private val _allApps = MutableStateFlow<List<AppInfo>>(emptyList())
+    /** 是否处于首次加载状态（展示整屏 Loading）。 */
     private val _isLoading = MutableStateFlow(true)
+    /** 是否处于加载中状态（展示顶部进度条）。 */
     private val _isRefreshing = MutableStateFlow(false)
+    /** 加载进度，取值 0f ~ 1f。 */
     private val _loadProgress = MutableStateFlow(0f)
+    /** 加载进度文案，形如 `12 / 100`。 */
     private val _loadProgressText = MutableStateFlow("")
+    /** 加载过程中的错误信息，null 表示无错误。 */
     private val _error = MutableStateFlow<String?>(null)
 
+    /** 是否正在加载应用列表。 */
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+    /** 加载进度，取值 0f ~ 1f。 */
     val loadProgress: StateFlow<Float> = _loadProgress.asStateFlow()
+    /** 加载进度文案，形如 `12 / 100`。 */
     val loadProgressText: StateFlow<String> = _loadProgressText.asStateFlow()
 
+    /** 已勾选的安装来源标签集合，空集合表示不按来源过滤。 */
     val selectedInstallers: StateFlow<Set<String?>> = settingsRepository.selectedInstallers
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
+    /** 是否显示系统应用。 */
     val showSystem: StateFlow<Boolean> = settingsRepository.showSystem
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    /** 是否显示已禁用的应用。 */
     val showDisabled: StateFlow<Boolean> = settingsRepository.showDisabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    /**
+     * 参与列表过滤的一组条件参数。
+     *
+     * @property selectedInstallers 已勾选的安装来源标签；为空表示不过滤
+     * @property showSystem 是否显示系统应用
+     * @property showDisabled 是否显示已禁用的应用
+     */
     data class FilterParams(
         val selectedInstallers: Set<String?>,
         val showSystem: Boolean,
         val showDisabled: Boolean
     )
 
+    /** 将三个筛选条件流合并为单一的 [FilterParams] 流。 */
     private val filterParams = combine(
         selectedInstallers,
         showSystem,
@@ -54,6 +85,10 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
         FilterParams(selected, showSystem, showDisabled)
     }
 
+    /**
+     * 当前所有应用中出现过的安装来源标签，去重并按名称升序排列。
+     * ADB 安装的应用统一归类到 [ADB_INSTALLER]。
+     */
     val availableInstallers: StateFlow<List<String?>> = _allApps.map { apps ->
         apps.map { app ->
             if (app.isAdbInstalled) ADB_INSTALLER
@@ -61,6 +96,12 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
         }.distinct().sortedBy { it ?: "" }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /**
+     * 列表页的 UI 状态。
+     *
+     * 由全量应用、加载状态、错误信息和筛选条件合并计算而来：
+     * 优先展示 Loading，其次 Error，最后按条件过滤后输出 [AppListUiState.Success]。
+     */
     val uiState: StateFlow<AppListUiState> = combine(
         _allApps, _isLoading, _error, filterParams
     ) { allApps, loading, error, filters ->
@@ -84,26 +125,45 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppListUiState.Loading)
 
+    /** Shizuku 应用是否已安装。 */
     private val _isShizukuInstalled = MutableStateFlow(false)
     val isShizukuInstalled: StateFlow<Boolean> = _isShizukuInstalled.asStateFlow()
 
+    /** Shizuku 服务是否正在运行。 */
     private val _isShizukuAvailable = MutableStateFlow(false)
     val isShizukuAvailable: StateFlow<Boolean> = _isShizukuAvailable.asStateFlow()
 
+    /** 本应用是否已获得 Shizuku 授权。 */
     private val _hasShizukuPermission = MutableStateFlow(false)
     val hasShizukuPermission: StateFlow<Boolean> = _hasShizukuPermission.asStateFlow()
 
+    /**
+     * 初始化：先刷新 Shizuku 状态，再开始加载应用列表。
+     * 二者顺序不可颠倒，否则安装来源解析会因 Shizuku 状态未知而降级。
+     */
     init {
         refreshStatus()
         loadApps()
     }
 
+    /**
+     * 重新查询并更新 Shizuku 的安装、运行与授权状态。
+     *
+     * 应在 Activity 创建、Shizuku Binder 连接、以及授权结果回调时调用。
+     */
     fun refreshStatus() {
         _isShizukuInstalled.value = ShizukuManager.isInstalled(getApplication())
         _isShizukuAvailable.value = ShizukuManager.isAvailable()
         _hasShizukuPermission.value = ShizukuManager.hasPermission()
     }
 
+    /**
+     * 加载（或重新加载）设备上的应用列表。
+     *
+     * 加载期间会持续更新 [loadProgress] 与 [loadProgressText]；
+     * 收到第一个应用时即解除 Loading 状态，让列表尽早呈现；
+     * 全部加载完成后弹出 Toast 提示，异常时写入 [_error]。
+     */
     fun loadApps() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -154,6 +214,11 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /**
+     * 勾选或取消勾选某个安装来源，并持久化筛选结果。
+     *
+     * @param label 安装来源标签，null 表示"未知来源"
+     */
     fun toggleInstallerFilter(label: String?) {
         viewModelScope.launch {
             val current = selectedInstallers.value.toMutableSet()
@@ -166,25 +231,53 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /** 反转并持久化"是否显示系统应用"的筛选开关。 */
     fun toggleSystemFilter() {
         viewModelScope.launch {
             settingsRepository.setShowSystem(!showSystem.value)
         }
     }
 
+    /** 反转并持久化"是否显示已禁用应用"的筛选开关。 */
     fun toggleDisabledFilter() {
         viewModelScope.launch {
             settingsRepository.setShowDisabled(!showDisabled.value)
         }
     }
 
+    /**
+     * 向 Shizuku 发起授权请求。
+     *
+     * 授权结果通过 `Shizuku.OnRequestPermissionResultListener` 回调，
+     * 最终由 [refreshStatus] 统一刷新状态。
+     */
     fun requestShizukuPermission() {
         ShizukuManager.requestPermission()
     }
 }
 
+/**
+ * 应用列表页的 UI 状态。
+ *
+ * @see AppListUiState.Loading 首次加载中，展示整屏进度条
+ * @see AppListUiState.Success 加载成功，携带过滤后的应用列表
+ * @see AppListUiState.Error 加载失败，携带错误信息
+ */
 sealed class AppListUiState {
+    /** 首次加载中，列表内容为空。 */
     object Loading : AppListUiState()
+
+    /**
+     * 加载成功。
+     *
+     * @property apps 按当前筛选条件过滤后的应用列表
+     */
     data class Success(val apps: List<AppInfo>) : AppListUiState()
+
+    /**
+     * 加载失败。
+     *
+     * @property message 错误描述
+     */
     data class Error(val message: String) : AppListUiState()
 }
