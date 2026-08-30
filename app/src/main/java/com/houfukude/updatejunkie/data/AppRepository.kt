@@ -70,6 +70,10 @@ class AppRepository(private val context: Context) {
             if (!includeSystemApps && isSystemApp) false else true
         }
 
+        // 确保 Shizuku 服务已尝试绑定
+        android.util.Log.d("AppRepository", "Starting installed apps flow, binding Shizuku...")
+        ShizukuManager.bindService(context)
+
         // 发送总数
         emit(AppLoadResult.Total(filteredPackages.size))
 
