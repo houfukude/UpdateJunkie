@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- M3 Core Colors (Dark) -->
+    <color name="primary">#D0BCFF</color>
+    <color name="secondary">#CCC2DC</color>
+    <color name="tertiary">#EFB8C8</color>
+
+    <!-- App Item Colors (Dark) -->
+    <color name="item_disabled_bg">#33424242</color>
+    <color name="item_system_bg">#33FFD54F</color>
+    <color name="item_user_bg">#33BA68C8</color>
+    <color name="item_adb_bg">#3381C784</color>
+
+    <color name="item_market_other_bg">#334DD0E1</color>
+    <color name="item_market_known_bg">#3364B5F6</color>
+    <color name="item_market_unknown_bg">#334FC3F7</color>
+
+    <color name="item_secondary_text">#BDBDBD</color>
+    <color name="item_badge_disabled_bg">#616161</color>
+    <color name="item_badge_system_icon">#FFB300</color>
+    <color name="item_user_text">#CE93D8</color>
+</resources>

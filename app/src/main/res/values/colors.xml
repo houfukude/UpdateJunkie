@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- M3 Core Colors (Light) -->
+    <color name="primary">#6650a4</color>
+    <color name="secondary">#625b71</color>
+    <color name="tertiary">#7D5260</color>
+
+    <!-- App Item Colors (Light) -->
+    <color name="item_disabled_bg">#66BDBDBD</color>
+    <color name="item_system_bg">#FFF8E1</color>
+    <color name="item_user_bg">#F3E5F5</color>
+    <color name="item_adb_bg">#E8F5E9</color>
+
+    <color name="item_market_other_bg">#E0F7FA</color>
+    <color name="item_market_known_bg">#E3F2FD</color>
+    <color name="item_market_unknown_bg">#E8F5E9</color>
+
+    <color name="item_secondary_text">#808080</color>
+    <color name="item_badge_disabled_bg">#808080</color>
+    <color name="item_badge_system_icon">#FFA000</color>
+    <color name="item_user_text">#7B1FA2</color>
+</resources>
