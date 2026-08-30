@@ -12,6 +12,6 @@ data class AppInfo(
     val installerLabel: String?,
     val isSystemApp: Boolean,
     val isEnabled: Boolean,
-    val userId: Int,
+    val userId: String,
     val isAdbInstalled: Boolean
 )

@@ -50,12 +50,26 @@ class AppRepository(private val context: Context) {
                 packageInfo.versionCode.toLong()
             }
             val isEnabled = appInfo.enabled
-            val userId = appInfo.uid / 100000
+
+            // 只执行一次 dumpsys，同时拿到安装来源 PackageName 和 userId
+            val fallbackUserId = appInfo.uid / 100000
+            val installInfo = if (isSystemApp) null else ShizukuManager.getInstallInfo(packageName)
+
+            val userId = if (isSystemApp) {
+                fallbackUserId.toString()
+            } else {
+                // 可能有多个用户同时安装了该包，用逗号分隔展示
+                installInfo?.users
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.joinToString(",")
+                    ?: fallbackUserId.toString()
+            }
 
             val installerPackageName = if (isSystemApp) {
                 MarketUtils.SYSTEM_APP_INSTALLER
             } else {
-                getInstallerPackageName(pm, packageName, userId)
+                installInfo?.installerPackageName
+                    ?: getInstallerPackageName(pm, packageName)
             }
             
             val installerLabel = MarketUtils.getMarketLabel(installerPackageName)
@@ -81,11 +95,8 @@ class AppRepository(private val context: Context) {
         }
     }.flowOn(Dispatchers.IO)
 
-    private fun getInstallerPackageName(pm: PackageManager, packageName: String, userId: Int): String? {
-        // 尝试使用 Shizuku 获取更详细的安装来源信息
-        val shizukuInstaller = ShizukuManager.getDetailedInstaller(packageName, userId)
-        if (shizukuInstaller != null) return shizukuInstaller
-
+    /** 当 Shizuku 无权限或未提供时，回退到 PackageManager 获取安装来源 */
+    private fun getInstallerPackageName(pm: PackageManager, packageName: String): String? {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 pm.getInstallSourceInfo(packageName).installingPackageName

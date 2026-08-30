@@ -272,7 +272,7 @@ fun MainScreenPreview() {
                         installerLabel = "Google Play Store",
                         isSystemApp = false,
                         isEnabled = true,
-                        userId = 0,
+                        userId = "0",
                         isAdbInstalled = false
                     ),
                     AppInfo(
@@ -285,7 +285,7 @@ fun MainScreenPreview() {
                         installerLabel = null,
                         isSystemApp = true,
                         isEnabled = true,
-                        userId = 0,
+                        userId = "0",
                         isAdbInstalled = false
                     ),
                     AppInfo(
@@ -298,7 +298,7 @@ fun MainScreenPreview() {
                         installerLabel = "Coolapk",
                         isSystemApp = false,
                         isEnabled = false,
-                        userId = 0,
+                        userId = "0",
                         isAdbInstalled = false
                     )
                 )

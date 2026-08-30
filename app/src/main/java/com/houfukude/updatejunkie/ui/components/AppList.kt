@@ -54,7 +54,7 @@ fun AppItem(app: AppInfo) {
     val backgroundColor = when {
         !app.isEnabled -> colorResource(R.color.item_disabled_bg)
         app.isSystemApp -> colorResource(R.color.item_system_bg)
-        app.userId != 0 -> colorResource(R.color.item_user_bg)
+        app.userId != "0" -> colorResource(R.color.item_user_bg)
         app.isAdbInstalled -> colorResource(R.color.item_adb_bg)
         else -> MarketUtils.getMarketColor(app.installerPackageName)?.let { colorResource(it) }
             ?: Color.Transparent
@@ -131,7 +131,7 @@ fun AppItem(app: AppInfo) {
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    if (app.userId != 0) {
+                    if (app.userId != "0") {
                         Spacer(Modifier.width(8.dp))
                         Text(
                             "用户: ${app.userId}",
@@ -186,7 +186,7 @@ fun AppItemPreview() {
                     installerLabel = "Google Play Store",
                     isSystemApp = false,
                     isEnabled = true,
-                    userId = 0,
+                    userId = "0",
                     isAdbInstalled = false
                 )
             )
@@ -201,7 +201,7 @@ fun AppItemPreview() {
                     installerLabel = null,
                     isSystemApp = true,
                     isEnabled = true,
-                    userId = 0,
+                    userId = "0",
                     isAdbInstalled = false
                 )
             )
@@ -225,7 +225,7 @@ fun AppListPreview() {
                     installerLabel = "Google Play Store",
                     isSystemApp = false,
                     isEnabled = true,
-                    userId = 0,
+                    userId = "0",
                     isAdbInstalled = false
                 ),
                 AppInfo(
@@ -238,7 +238,7 @@ fun AppListPreview() {
                     installerLabel = null,
                     isSystemApp = true,
                     isEnabled = true,
-                    userId = 0,
+                    userId = "0",
                     isAdbInstalled = false
                 )
             )
