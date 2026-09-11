@@ -47,4 +47,15 @@
     <string name="update_url_label">Update URL</string>
     <string name="save">Save</string>
     <string name="update_url_saved">Update URL saved</string>
+    <string name="import_config">Import Configuration</string>
+    <string name="export_config">Export Configuration</string>
+    <string name="import_via_url">Import via URL</string>
+    <string name="import_via_file">Import via File</string>
+    <string name="import_dialog_title">Import Config</string>
+    <string name="export_dialog_title">Export Config</string>
+    <string name="invalid_config_format">Invalid configuration format</string>
+    <string name="import_success">Import successful</string>
+    <string name="export_success">Export successful</string>
+    <string name="url_hint">Enter URL</string>
+    <string name="btn_import">Import</string>
 </resources>

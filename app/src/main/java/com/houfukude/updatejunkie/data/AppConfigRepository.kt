@@ -72,4 +72,17 @@ class AppConfigRepository(context: Context) {
         configs.put(packageName, appConfig)
         saveConfigs()
     }
+
+    /**
+     * 获取所有应用配置的 JSON 字符串。
+     */
+    fun getAllConfigs(): JSONObject = configs
+
+    /**
+     * 从 JSON 对象导入配置并持久化。
+     */
+    fun importConfigs(newConfigs: JSONObject) {
+        configs = newConfigs
+        saveConfigs()
+    }
 }

@@ -1,15 +1,25 @@
 package com.houfukude.updatejunkie.viewmodel
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.houfukude.updatejunkie.R
+import com.houfukude.updatejunkie.data.AppConfigRepository
+import com.houfukude.updatejunkie.data.LanguageConfig
 import com.houfukude.updatejunkie.data.SettingsRepository
 import com.houfukude.updatejunkie.data.ThemeConfig
-import com.houfukude.updatejunkie.data.LanguageConfig
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.URL
 
 /**
  * 设置页的 ViewModel，负责主题配置的读取与写入。
@@ -19,6 +29,17 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     /** 设置持久化仓库。 */
     private val repository = SettingsRepository(application)
+
+    /** 应用特定配置仓库。 */
+    private val appConfigRepository = AppConfigRepository(application)
+
+    private val _eventFlow = MutableSharedFlow<SettingsEvent>()
+    val eventFlow: SharedFlow<SettingsEvent> = _eventFlow.asSharedFlow()
+
+    sealed class SettingsEvent {
+        data class ShowToast(val messageRes: Int) : SettingsEvent()
+        data class Error(val message: String) : SettingsEvent()
+    }
 
     /**
      * 当前主题配置。
@@ -62,6 +83,73 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setLanguageConfig(languageConfig: LanguageConfig) {
         viewModelScope.launch {
             repository.setLanguageConfig(languageConfig)
+        }
+    }
+
+    /**
+     * 将所有配置导出为 JSON 字符串。
+     */
+    fun exportConfig(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                val json = appConfigRepository.getAllConfigs().toString(2)
+                withContext(Dispatchers.IO) {
+                    getApplication<Application>().contentResolver.openOutputStream(uri)?.use {
+                        it.write(json.toByteArray())
+                    }
+                }
+                _eventFlow.emit(SettingsEvent.ShowToast(R.string.export_success))
+            } catch (e: Exception) {
+                _eventFlow.emit(SettingsEvent.Error(e.localizedMessage ?: "Export failed"))
+            }
+        }
+    }
+
+    /**
+     * 从 URI 导入配置。
+     */
+    fun importConfigFromFile(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                val json = withContext(Dispatchers.IO) {
+                    getApplication<Application>().contentResolver.openInputStream(uri)?.use {
+                        it.bufferedReader().readText()
+                    }
+                }
+                if (json != null) {
+                    processImport(json)
+                }
+            } catch (e: Exception) {
+                _eventFlow.emit(SettingsEvent.Error(e.localizedMessage ?: "Import failed"))
+            }
+        }
+    }
+
+    /**
+     * 从 URL 导入配置。
+     */
+    fun importConfigFromUrl(urlString: String) {
+        viewModelScope.launch {
+            try {
+                val json = withContext(Dispatchers.IO) {
+                    URL(urlString).readText()
+                }
+                processImport(json)
+            } catch (e: Exception) {
+                _eventFlow.emit(SettingsEvent.Error(e.localizedMessage ?: "Import failed"))
+            }
+        }
+    }
+
+    private suspend fun processImport(json: String) {
+        try {
+            val jsonObject = JSONObject(json)
+            // 简单的格式校验：检查是否为有效的 JSON 对象
+            // 这里可以根据实际需求增加更详细的校验
+            appConfigRepository.importConfigs(jsonObject)
+            _eventFlow.emit(SettingsEvent.ShowToast(R.string.import_success))
+        } catch (e: Exception) {
+            _eventFlow.emit(SettingsEvent.ShowToast(R.string.invalid_config_format))
         }
     }
 }

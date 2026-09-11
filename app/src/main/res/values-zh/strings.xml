@@ -47,4 +47,15 @@
     <string name="update_url_label">更新地址 (URL)</string>
     <string name="save">保存</string>
     <string name="update_url_saved">更新地址已保存</string>
+    <string name="import_config">导入配置</string>
+    <string name="export_config">导出配置</string>
+    <string name="import_via_url">通过 URL 导入</string>
+    <string name="import_via_file">通过文件导入</string>
+    <string name="import_dialog_title">导入配置</string>
+    <string name="export_dialog_title">导出配置</string>
+    <string name="invalid_config_format">无效的配置格式</string>
+    <string name="import_success">导入成功</string>
+    <string name="export_success">导出成功</string>
+    <string name="url_hint">输入 URL</string>
+    <string name="btn_import">导入</string>
 </resources>

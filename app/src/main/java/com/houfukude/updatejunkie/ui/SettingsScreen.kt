@@ -1,24 +1,55 @@
 package com.houfukude.updatejunkie.ui
 
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import com.houfukude.updatejunkie.BuildConfig
 import com.houfukude.updatejunkie.R
-import com.houfukude.updatejunkie.data.ThemeConfig
 import com.houfukude.updatejunkie.data.LanguageConfig
+import com.houfukude.updatejunkie.data.ThemeConfig
 import com.houfukude.updatejunkie.ui.theme.UpdateJunkieTheme
 import com.houfukude.updatejunkie.viewmodel.SettingsViewModel
 
@@ -35,13 +66,41 @@ fun SettingsScreen(
     viewModel: SettingsViewModel,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     val themeConfig by viewModel.themeConfig.collectAsState()
     val languageConfig by viewModel.languageConfig.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.eventFlow.collect { event ->
+            when (event) {
+                is SettingsViewModel.SettingsEvent.ShowToast -> {
+                    Toast.makeText(context, event.messageRes, Toast.LENGTH_SHORT).show()
+                }
+
+                is SettingsViewModel.SettingsEvent.Error -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
     SettingsScreenContent(
         themeConfig = themeConfig,
         onThemeConfigChange = { viewModel.setThemeConfig(it) },
         languageConfig = languageConfig,
         onLanguageConfigChange = { viewModel.setLanguageConfig(it) },
+        onImportFile = { viewModel.importConfigFromFile(it) },
+        onImportUrl = { viewModel.importConfigFromUrl(it) },
+        onExport = { viewModel.exportConfig(it) },
+        onAboutClick = {
+            val intent = Intent(
+                Intent.ACTION_VIEW,
+                "https://github.com/houfukude/UpdateJunkie".toUri()
+            ).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        },
         onBack = onBack
     )
 }
@@ -55,6 +114,10 @@ fun SettingsScreen(
  * @param onThemeConfigChange 主题配置变更时的回调
  * @param languageConfig 当前选中的语言配置
  * @param onLanguageConfigChange 语言配置变更时的回调
+ * @param onImportFile 通过文件导入的回调
+ * @param onImportUrl 通过 URL 导入的回调
+ * @param onExport 导出配置的回调
+ * @param onAboutClick 点击“关于”项时的回调
  * @param onBack 点击返回箭头时的回调
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,10 +127,28 @@ fun SettingsScreenContent(
     onThemeConfigChange: (ThemeConfig) -> Unit,
     languageConfig: LanguageConfig,
     onLanguageConfigChange: (LanguageConfig) -> Unit,
+    onImportFile: (Uri) -> Unit,
+    onImportUrl: (String) -> Unit,
+    onExport: (Uri) -> Unit,
+    onAboutClick: () -> Unit,
     onBack: () -> Unit
 ) {
     var showThemeDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
+    var showUrlImportDialog by remember { mutableStateOf(false) }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { onImportFile(it) }
+    }
+
+    val fileSaverLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let { onExport(it) }
+    }
 
     Scaffold(
         topBar = {
@@ -109,10 +190,27 @@ fun SettingsScreenContent(
                 modifier = Modifier.clickable { showThemeDialog = true }
             )
             ListItem(
+                headlineContent = { Text(stringResource(R.string.import_config)) },
+                leadingContent = { Icon(Icons.Default.FileUpload, contentDescription = null) },
+                modifier = Modifier.clickable { showImportDialog = true }
+            )
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.export_config)) },
+                leadingContent = { Icon(Icons.Default.FileDownload, contentDescription = null) },
+                modifier = Modifier.clickable { fileSaverLauncher.launch("app_configs.json") }
+            )
+            ListItem(
                 headlineContent = { Text(stringResource(R.string.about)) },
-                supportingContent = { Text(stringResource(R.string.version, "1.0.0")) },
+                supportingContent = {
+                    Text(
+                        stringResource(
+                            R.string.version,
+                            BuildConfig.VERSION_NAME
+                        )
+                    )
+                },
                 leadingContent = { Icon(Icons.Default.Info, contentDescription = null) },
-                modifier = Modifier.clickable { /* TODO */ }
+                modifier = Modifier.clickable { onAboutClick() }
             )
         }
     }
@@ -172,7 +270,68 @@ fun SettingsScreenContent(
             }
         )
     }
+
+    if (showImportDialog) {
+        AlertDialog(
+            onDismissRequest = { showImportDialog = false },
+            title = { Text(stringResource(R.string.import_dialog_title)) },
+            text = {
+                Column {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.import_via_url)) },
+                        modifier = Modifier.clickable {
+                            showImportDialog = false
+                            showUrlImportDialog = true
+                        }
+                    )
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.import_via_file)) },
+                        modifier = Modifier.clickable {
+                            showImportDialog = false
+                            filePickerLauncher.launch("application/json")
+                        }
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showImportDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (showUrlImportDialog) {
+        var url by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showUrlImportDialog = false },
+            title = { Text(stringResource(R.string.import_via_url)) },
+            text = {
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    label = { Text(stringResource(R.string.url_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onImportUrl(url)
+                    showUrlImportDialog = false
+                }) {
+                    Text(stringResource(R.string.btn_import))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUrlImportDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 }
+
 
 /**
  * 主题选择对话框中的单个单选项。
@@ -222,6 +381,10 @@ fun SettingsScreenPreview() {
             onThemeConfigChange = {},
             languageConfig = LanguageConfig.FOLLOW_SYSTEM,
             onLanguageConfigChange = {},
+            onImportFile = {},
+            onImportUrl = {},
+            onExport = {},
+            onAboutClick = {},
             onBack = {}
         )
     }
