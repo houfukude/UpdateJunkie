@@ -522,9 +522,11 @@ fun SettingsScreenContent(
                         }
                     } else {
                         discoveredDevices.forEach { device ->
+                            @Suppress("DEPRECATION")
+                            val hostAddress = device.host?.hostAddress
                             ListItem(
                                 headlineContent = { Text(device.serviceName) },
-                                supportingContent = { Text("${device.host?.hostAddress}:${device.port}") },
+                                supportingContent = { Text("${hostAddress ?: "Unknown"}:${device.port}") },
                                 leadingContent = {
                                     Icon(
                                         Icons.Default.Language,

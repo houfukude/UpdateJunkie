@@ -2,6 +2,9 @@ package com.houfukude.updatejunkie.data
 
 import android.content.Context
 import android.util.Log
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 import java.io.File
 
@@ -13,8 +16,26 @@ import java.io.File
  * @property context 应用上下文
  */
 class AppConfigRepository(context: Context) {
+    companion object {
+        @Volatile
+        private var instance: AppConfigRepository? = null
+
+        fun getInstance(context: Context): AppConfigRepository {
+            return instance ?: synchronized(this) {
+                instance ?: AppConfigRepository(context.applicationContext).also { instance = it }
+            }
+        }
+    }
+
     private val configFile = File(context.filesDir, "app_configs.json")
-    private var configs = JSONObject()
+    private val _configsFlow = MutableStateFlow(JSONObject())
+    val configsFlow: StateFlow<JSONObject> = _configsFlow.asStateFlow()
+
+    private var configs: JSONObject
+        get() = _configsFlow.value
+        set(value) {
+            _configsFlow.value = value
+        }
 
     init {
         loadConfigs()
@@ -36,11 +57,14 @@ class AppConfigRepository(context: Context) {
     }
 
     /**
-     * 将当前配置保存到磁盘。
+     * 将当前配置保存到磁盘并通知订阅者。
      */
     private fun saveConfigs() {
         try {
-            configFile.writeText(configs.toString(2))
+            val jsonString = configs.toString(2)
+            configFile.writeText(jsonString)
+            // 重新创建一个新的 JSONObject 以触发 StateFlow 的更新通知
+            _configsFlow.value = JSONObject(jsonString)
         } catch (e: Exception) {
             Log.e("AppConfigRepository", "Error saving configs", e)
         }
@@ -53,11 +77,7 @@ class AppConfigRepository(context: Context) {
      * @return 配置的 URL，若未设置则为 null
      */
     fun getUpdateUrl(packageName: String): String? {
-        return if (configs.has(packageName)) {
-            configs.optJSONObject(packageName)?.optString("updateUrl", null)
-        } else {
-            null
-        }
+        return configs.optJSONObject(packageName)?.opt("updateUrl") as? String
     }
 
     /**

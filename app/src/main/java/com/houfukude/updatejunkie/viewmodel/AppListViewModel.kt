@@ -36,7 +36,7 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     private val settingsRepository = SettingsRepository(application)
 
     /** 应用配置（如更新 URL）持久化仓库。 */
-    private val appConfigRepository = AppConfigRepository(application)
+    private val appConfigRepository = AppConfigRepository.getInstance(application)
 
     companion object {
         /** ADB / 命令行安装的应用在筛选器中使用的统一标签（内部标识）。 */
@@ -175,6 +175,33 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     init {
         refreshStatus()
         loadApps()
+        observeConfigChanges()
+    }
+
+    /**
+     * 监听配置变更（如导入操作），实时更新列表中的状态。
+     */
+    private fun observeConfigChanges() {
+        viewModelScope.launch {
+            appConfigRepository.configsFlow.collect { configs ->
+                // 仅在列表非空时批量更新，避免与初始加载冲突
+                if (_allApps.value.isNotEmpty()) {
+                    val updatedList = _allApps.value.map { app ->
+                        val hasConfig = configs.has(app.packageName) &&
+                                !configs.optJSONObject(app.packageName)?.optString("updateUrl")
+                                    .isNullOrBlank()
+                        if (app.hasUpdateUrl != hasConfig) {
+                            app.copy(hasUpdateUrl = hasConfig)
+                        } else {
+                            app
+                        }
+                    }
+                    if (updatedList != _allApps.value) {
+                        _allApps.value = updatedList
+                    }
+                }
+            }
+        }
     }
 
     /**

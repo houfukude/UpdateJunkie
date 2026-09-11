@@ -33,7 +33,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val repository = SettingsRepository(application)
 
     /** 应用特定配置仓库。 */
-    private val appConfigRepository = AppConfigRepository(application)
+    private val appConfigRepository = AppConfigRepository.getInstance(application)
 
     /** 局域网共享管理器。 */
     private val lanManager = LanManager(application)

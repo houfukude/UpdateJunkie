@@ -211,7 +211,7 @@ class LanManager(private val context: Context) {
 
             override fun onServiceFound(serviceInfo: NsdServiceInfo) {
                 if (serviceInfo.serviceType == serviceType || serviceInfo.serviceType == "$serviceType.") {
-                    manager.resolveService(serviceInfo, object : NsdManager.ResolveListener {
+                    val resolveListener = object : NsdManager.ResolveListener {
                         override fun onResolveFailed(info: NsdServiceInfo, errorCode: Int) {}
                         override fun onServiceResolved(info: NsdServiceInfo) {
                             val current = _discoveredDevices.value.toMutableList()
@@ -220,7 +220,14 @@ class LanManager(private val context: Context) {
                                 _discoveredDevices.value = current
                             }
                         }
-                    })
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        @Suppress("DEPRECATION")
+                        manager.resolveService(serviceInfo, { it.run() }, resolveListener)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        manager.resolveService(serviceInfo, resolveListener)
+                    }
                 }
             }
 
@@ -252,12 +259,26 @@ class LanManager(private val context: Context) {
      */
     suspend fun fetchConfig(info: NsdServiceInfo): String? = withContext(Dispatchers.IO) {
         try {
-            Socket(info.host, info.port).use { socket ->
+            val address = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                info.hostAddresses.firstOrNull()
+            } else {
+                @Suppress("DEPRECATION")
+                info.host
+            }
+            if (address == null) return@withContext null
+
+            Socket(address, info.port).use { socket ->
                 socket.soTimeout = 5000
                 socket.getInputStream().bufferedReader().readText()
             }
         } catch (e: Exception) {
-            Log.e("LanManager", "Failed to fetch config from ${info.host}", e)
+            val hostStr = try {
+                @Suppress("DEPRECATION")
+                info.host?.hostAddress
+            } catch (_: Exception) {
+                "unknown"
+            }
+            Log.e("LanManager", "Failed to fetch config from $hostStr", e)
             null
         }
     }

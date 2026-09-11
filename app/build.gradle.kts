@@ -2,6 +2,7 @@ import com.android.build.api.variant.BuildConfigField
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 plugins {
     alias(libs.plugins.android.application)
@@ -55,8 +56,11 @@ android {
 // 1. 定义动态时间来源，专门用于解决 Configuration Cache 开启时不更新的问题
 abstract class BuildTimeValueSource : ValueSource<String, ValueSourceParameters.None> {
     override fun obtain(): String {
-        val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-        println("[INFO] BuildTime : $date")
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        // 强制使用东八区 (UTC+8) 时间，确保 GitHub Actions 与本地时间一致
+        dateFormat.timeZone = TimeZone.getTimeZone("GMT+8")
+        val date = dateFormat.format(Date())
+        println("[INFO] BuildTime (GMT+8): $date")
         return date
     }
 }
