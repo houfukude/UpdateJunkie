@@ -34,3 +34,4 @@ captures/
 Thumbs.db
 
 .artifacts/
+.env

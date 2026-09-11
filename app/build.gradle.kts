@@ -1,3 +1,8 @@
+import com.android.build.api.variant.BuildConfigField
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -17,12 +22,20 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+    }
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "debug.keystore")
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
+        }
     }
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             optimization {
                 enable = false
             }
@@ -36,6 +49,34 @@ android {
         compose = true
         aidl = true
         buildConfig = true
+    }
+}
+
+// 1. 定义动态时间来源，专门用于解决 Configuration Cache 开启时不更新的问题
+abstract class BuildTimeValueSource : ValueSource<String, ValueSourceParameters.None> {
+    override fun obtain(): String {
+        val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+        println("[INFO] BuildTime : $date")
+        return date
+    }
+}
+
+// 自定义输出文件名 (适配 AGP 8.0+)
+androidComponents {
+    onVariants { variant ->
+        // 2. 获取动态时间的 Provider (它在任务执行阶段才会被调用)
+        val buildTimeProvider = providers.of(BuildTimeValueSource::class.java) {}
+
+        // 3. 注入 BUILD_TIME 字段
+        variant.buildConfigFields?.put("BUILD_TIME", buildTimeProvider.map { time ->
+            BuildConfigField("String", "\"$time\"", "Build Time")
+        })
+
+        variant.outputs.forEach { output ->
+            val versionName = android.defaultConfig.versionName ?: "1.0"
+            val applicationId = android.defaultConfig.applicationId ?: "com.houfukude.updatejunkie"
+            output.outputFileName.set("${applicationId}_${versionName}_${variant.name}.apk")
+        }
     }
 }
 
@@ -56,11 +97,6 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
-    testImplementation(libs.junit)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

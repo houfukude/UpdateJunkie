@@ -1,0 +1,14 @@
+{
+  "com.termux": {
+    "updateUrl": "https:\/\/f-droid.org\/zh_Hans\/packages\/com.termux\/"
+  },
+  "com.aistra.hail": {
+    "updateUrl": "https:\/\/f-droid.org\/packages\/com.aistra.hail\/"
+  },
+  "com.feiniu.music": {
+    "updateUrl": "https:\/\/github.com\/kuilei0926\/FeiNiuMusic\/releases"
+  },
+  "com.houfukude.updatejunkie": {
+    "updateUrl": "https:\/\/github.com\/houfukude\/UpdateJunkie\/releases"
+  }
+}

@@ -243,6 +243,11 @@ fun SettingsScreenContent(
                 modifier = Modifier.clickable { showExportDialog = true }
             )
             ListItem(
+                headlineContent = { Text(stringResource(R.string.build_time)) },
+                supportingContent = { Text(BuildConfig.BUILD_TIME) },
+                leadingContent = { Icon(Icons.Default.Info, contentDescription = null) }
+            )
+            ListItem(
                 headlineContent = { Text(stringResource(R.string.about)) },
                 supportingContent = {
                     Text(
