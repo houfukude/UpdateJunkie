@@ -13,9 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.houfukude.updatejunkie.R
 import com.houfukude.updatejunkie.model.AppInfo
 import com.houfukude.updatejunkie.ui.components.AppList
 import com.houfukude.updatejunkie.ui.components.ShizukuStatusCard
@@ -147,10 +149,10 @@ fun MainScreenContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("更新控") },
+                title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     IconButton(onClick = onRefresh) {
-                        Icon(Icons.Default.Refresh, contentDescription = "刷新")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
                     }
                     Box {
                         IconButton(
@@ -164,26 +166,33 @@ fun MainScreenContent(
                                 IconButtonDefaults.iconButtonColors()
                             }
                         ) {
-                            Icon(Icons.Default.FilterList, contentDescription = "筛选")
+                            Icon(Icons.Default.FilterList, contentDescription = stringResource(R.string.filter))
                         }
                         DropdownMenu(
                             expanded = showFilterMenu,
                             onDismissRequest = onToggleFilterMenu
                         ) {
                             DropdownMenuItem(
-                                text = { Text("显示系统应用") },
+                                text = { Text(stringResource(R.string.show_system_apps)) },
                                 trailingIcon = { Checkbox(checked = showSystem, onCheckedChange = null) },
                                 onClick = onToggleSystem
                             )
                             DropdownMenuItem(
-                                text = { Text("显示已禁用应用") },
+                                text = { Text(stringResource(R.string.show_disabled_apps)) },
                                 trailingIcon = { Checkbox(checked = showDisabled, onCheckedChange = null) },
                                 onClick = onToggleDisabled
                             )
                             HorizontalDivider()
                             availableInstallers.forEach { label ->
                                 DropdownMenuItem(
-                                    text = { Text(label ?: "未知") },
+                                    text = {
+                                        val displayLabel = when (label) {
+                                            null -> stringResource(R.string.unknown)
+                                            AppListViewModel.ADB_INSTALLER -> stringResource(R.string.adb_installed)
+                                            else -> label
+                                        }
+                                        Text(displayLabel)
+                                    },
                                     trailingIcon = {
                                         Checkbox(
                                             checked = selectedInstallers.contains(label),
@@ -196,7 +205,7 @@ fun MainScreenContent(
                         }
                     }
                     IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, contentDescription = "设置")
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings))
                     }
                 }
             )
@@ -224,7 +233,7 @@ fun MainScreenContent(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "正在扫描应用...",
+                                text = stringResource(R.string.scanning_apps),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.outline
                             )
@@ -277,7 +286,7 @@ fun MainScreenContent(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Error: ${state.message}",
+                                text = stringResource(R.string.error_prefix, state.message),
                                 color = MaterialTheme.colorScheme.error
                             )
                         }

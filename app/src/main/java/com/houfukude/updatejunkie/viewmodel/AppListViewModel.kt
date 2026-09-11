@@ -9,6 +9,7 @@ import com.houfukude.updatejunkie.data.AppRepository
 import com.houfukude.updatejunkie.data.SettingsRepository
 import com.houfukude.updatejunkie.model.AppInfo
 import com.houfukude.updatejunkie.shizuku.ShizukuManager
+import com.houfukude.updatejunkie.R
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -27,8 +28,8 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     private val settingsRepository = SettingsRepository(application)
 
     companion object {
-        /** ADB / 命令行安装的应用在筛选器中使用的统一标签。 */
-        const val ADB_INSTALLER = "ADB 安装"
+        /** ADB / 命令行安装的应用在筛选器中使用的统一标签（内部标识）。 */
+        const val ADB_INSTALLER = "__adb_installed__"
     }
 
     /** 全量应用列表（未过滤），按名称升序维护。 */
@@ -204,7 +205,7 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                             }
                         }
                     }
-                Toast.makeText(getApplication(), "应用列表加载完成", Toast.LENGTH_SHORT).show()
+                Toast.makeText(getApplication(), getApplication<Application>().getString(R.string.load_complete), Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Unknown error"
             } finally {

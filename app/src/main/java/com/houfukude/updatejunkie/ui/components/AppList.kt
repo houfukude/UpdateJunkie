@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -97,7 +98,7 @@ fun AppItem(app: AppInfo) {
                                 shape = MaterialTheme.shapes.extraSmall
                             ) {
                                 Text(
-                                    "已禁用",
+                                    stringResource(R.string.disabled_badge),
                                     color = Color.White,
                                     fontSize = 10.sp,
                                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -142,7 +143,8 @@ fun AppItem(app: AppInfo) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val sourceText =
-                        if (app.isAdbInstalled) "ADB 安装" else "来源: ${app.installerLabel ?: "未知"}"
+                        if (app.isAdbInstalled) stringResource(R.string.adb_installed)
+                        else stringResource(R.string.source_prefix, app.installerLabel ?: stringResource(R.string.unknown))
                     Text(
                         sourceText,
                         fontSize = 12.sp,
@@ -151,7 +153,7 @@ fun AppItem(app: AppInfo) {
                     if (app.userId != "0") {
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "用户: ${app.userId}",
+                            stringResource(R.string.user_prefix, app.userId),
                             fontSize = 12.sp,
                             color = colorResource(R.color.item_user_text)
                         )
@@ -159,7 +161,7 @@ fun AppItem(app: AppInfo) {
                 }
                 app.versionName?.let {
                     Text(
-                        "版本: $it (${app.versionCode})",
+                        stringResource(R.string.version_prefix, it, app.versionCode),
                         fontSize = 12.sp,
                         color = colorResource(R.color.item_secondary_text),
                         modifier = Modifier.fillMaxWidth()

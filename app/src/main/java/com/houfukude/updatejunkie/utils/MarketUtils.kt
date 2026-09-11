@@ -15,10 +15,9 @@ object MarketUtils {
     /** 系统预装应用使用的虚拟安装来源标识（并非真实包名）。 */
     const val SYSTEM_APP_INSTALLER = "system_app"
 
-    /** 已知安装来源包名与其展示名称的映射表。 */
+    /** 已知安装来源包名与其展示名称的映射表（仅包含英文名或内部 ID）。 */
     private val MARKET_MAP = mapOf(
         "com.android.vending" to "Google Play",
-        SYSTEM_APP_INSTALLER to "系统应用",
         "com.google.android.packageinstaller" to "Package Installer",
         "com.coolapk.market" to "Coolapk",
         "com.xiaomi.market" to "Xiaomi Market",
@@ -40,11 +39,13 @@ object MarketUtils {
     /**
      * 将安装来源包名转换为用于展示的友好名称。
      *
+     * @param context 用于获取本地化字符串的上下文
      * @param installerPackageName 安装来源包名，为 null 表示未知来源
      * @return 已知市场返回映射名称；未知来源返回 "Unknown"；未收录的包名原样返回
      */
-    fun getMarketLabel(installerPackageName: String?): String {
-        if (installerPackageName == null) return "Unknown"
+    fun getMarketLabel(context: Context, installerPackageName: String?): String {
+        if (installerPackageName == null) return context.getString(R.string.unknown)
+        if (installerPackageName == SYSTEM_APP_INSTALLER) return context.getString(R.string.system_app)
         return MARKET_MAP[installerPackageName] ?: installerPackageName
     }
 

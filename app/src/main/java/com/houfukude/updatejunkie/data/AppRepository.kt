@@ -114,7 +114,7 @@ class AppRepository(private val context: Context) {
                     ?: getInstallerPackageName(pm, packageName)
             }
             
-            val installerLabel = MarketUtils.getMarketLabel(installerPackageName)
+            val installerLabel = MarketUtils.getMarketLabel(context, installerPackageName)
             val isAdbInstalled = !isSystemApp && (installerPackageName == null || installerPackageName == "com.android.shell")
 
             emit(

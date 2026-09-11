@@ -27,6 +27,8 @@ class SettingsRepository(private val context: Context) {
     private object PreferencesKeys {
         /** 主题模式，取值见 [ThemeConfig] 的枚举名 */
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        /** 语言配置，取值见 [LanguageConfig] 的枚举名 */
+        val LANGUAGE_MODE = stringPreferencesKey("language_mode")
         /** 是否在列表中显示系统应用 */
         val SHOW_SYSTEM = booleanPreferencesKey("show_system")
         /** 是否在列表中显示已禁用的应用 */
@@ -56,6 +58,19 @@ class SettingsRepository(private val context: Context) {
             }
         }
 
+    /**
+     * 当前语言配置流，未设置或取值非法时回退为 [LanguageConfig.FOLLOW_SYSTEM]。
+     */
+    val languageConfig: Flow<LanguageConfig> = context.dataStore.data
+        .map { preferences ->
+            val langName = preferences[PreferencesKeys.LANGUAGE_MODE] ?: LanguageConfig.FOLLOW_SYSTEM.name
+            try {
+                LanguageConfig.valueOf(langName)
+            } catch (e: IllegalArgumentException) {
+                LanguageConfig.FOLLOW_SYSTEM
+            }
+        }
+
     /** 是否显示系统应用，默认 false。 */
     val showSystem: Flow<Boolean> = context.dataStore.data
         .map { preferences -> preferences[PreferencesKeys.SHOW_SYSTEM] ?: false }
@@ -82,6 +97,17 @@ class SettingsRepository(private val context: Context) {
     suspend fun setThemeConfig(themeConfig: ThemeConfig) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.THEME_MODE] = themeConfig.name
+        }
+    }
+
+    /**
+     * 持久化语言配置。
+     *
+     * @param languageConfig 要保存的语言配置
+     */
+    suspend fun setLanguageConfig(languageConfig: LanguageConfig) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.LANGUAGE_MODE] = languageConfig.name
         }
     }
 

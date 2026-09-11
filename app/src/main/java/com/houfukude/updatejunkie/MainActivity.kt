@@ -3,12 +3,15 @@ package com.houfukude.updatejunkie
 import androidx.activity.compose.BackHandler
 import androidx.activity.viewModels
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.*
+import androidx.core.os.LocaleListCompat
 import com.houfukude.updatejunkie.data.ThemeConfig
+import com.houfukude.updatejunkie.data.LanguageConfig
 import com.houfukude.updatejunkie.viewmodel.AppListViewModel
 import com.houfukude.updatejunkie.viewmodel.SettingsViewModel
 import com.houfukude.updatejunkie.ui.MainScreen
@@ -25,7 +28,7 @@ import rikka.shizuku.Shizuku
  * - 在 Main / Settings 两个页面间切换并处理返回键；
  * - 注册与注销 Shizuku 的状态监听。
  */
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     /** 应用列表页的 ViewModel。 */
     private val viewModel: AppListViewModel by viewModels()
@@ -56,6 +59,20 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val themeConfig by settingsViewModel.themeConfig.collectAsState()
+            val languageConfig by settingsViewModel.languageConfig.collectAsState()
+
+            LaunchedEffect(languageConfig) {
+                val localeTag = when (languageConfig) {
+                    LanguageConfig.FOLLOW_SYSTEM -> ""
+                    LanguageConfig.CHINESE -> "zh"
+                    LanguageConfig.ENGLISH -> "en"
+                }
+                val appLocales = LocaleListCompat.forLanguageTags(localeTag)
+                if (AppCompatDelegate.getApplicationLocales() != appLocales) {
+                    AppCompatDelegate.setApplicationLocales(appLocales)
+                }
+            }
+
             val darkTheme = when (themeConfig) {
                 ThemeConfig.FOLLOW_SYSTEM -> isSystemInDarkTheme()
                 ThemeConfig.LIGHT -> false

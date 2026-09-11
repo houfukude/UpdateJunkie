@@ -5,10 +5,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.houfukude.updatejunkie.R
 import com.houfukude.updatejunkie.ui.theme.UpdateJunkieTheme
 
 /**
@@ -53,19 +55,19 @@ fun ShizukuStatusCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 val statusText = when {
-                    !isInstalled -> "Shizuku 未安装"
-                    !isAvailable -> "Shizuku 已安装"
-                    else -> "Shizuku 已连接"
+                    !isInstalled -> stringResource(R.string.shizuku_not_installed)
+                    !isAvailable -> stringResource(R.string.shizuku_installed)
+                    else -> stringResource(R.string.shizuku_connected)
                 }
                 Text(
                     text = statusText,
                     fontWeight = FontWeight.Bold
                 )
                 val detailText = when {
-                    !isInstalled -> "点击按钮跳转官网下载安装"
-                    !isAvailable -> "服务未运行，请先启动 Shizuku"
-                    hasPermission -> "已获得授权"
-                    else -> "尚未获得授权，请点击请求权限"
+                    !isInstalled -> stringResource(R.string.shizuku_download_hint)
+                    !isAvailable -> stringResource(R.string.shizuku_not_running_hint)
+                    hasPermission -> stringResource(R.string.shizuku_authorized)
+                    else -> stringResource(R.string.shizuku_not_authorized_hint)
                 }
                 Text(
                     text = detailText,
@@ -77,11 +79,11 @@ fun ShizukuStatusCard(
 
             if (!isInstalled) {
                 Button(onClick = onDownloadClick) {
-                    Text("去下载")
+                    Text(stringResource(R.string.go_to_download))
                 }
             } else if (isAvailable && !hasPermission) {
                 Button(onClick = onRequestPermission) {
-                    Text("请求授权")
+                    Text(stringResource(R.string.request_authorization))
                 }
             }
         }

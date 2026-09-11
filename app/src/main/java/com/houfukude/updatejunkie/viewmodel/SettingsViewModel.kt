@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.houfukude.updatejunkie.data.SettingsRepository
 import com.houfukude.updatejunkie.data.ThemeConfig
+import com.houfukude.updatejunkie.data.LanguageConfig
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -33,6 +34,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         )
 
     /**
+     * 当前语言配置。
+     */
+    val languageConfig: StateFlow<LanguageConfig> = repository.languageConfig
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = LanguageConfig.FOLLOW_SYSTEM
+        )
+
+    /**
      * 更新并持久化主题配置。
      *
      * @param themeConfig 用户选择的主题模式
@@ -40,6 +51,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setThemeConfig(themeConfig: ThemeConfig) {
         viewModelScope.launch {
             repository.setThemeConfig(themeConfig)
+        }
+    }
+
+    /**
+     * 更新并持久化语言配置。
+     *
+     * @param languageConfig 用户选择的语言模式
+     */
+    fun setLanguageConfig(languageConfig: LanguageConfig) {
+        viewModelScope.launch {
+            repository.setLanguageConfig(languageConfig)
         }
     }
 }
