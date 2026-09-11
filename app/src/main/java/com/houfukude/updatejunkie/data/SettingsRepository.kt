@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.houfukude.updatejunkie.data.SettingsRepository.Companion.NULL_LABEL_KEY
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -35,11 +36,14 @@ class SettingsRepository(private val context: Context) {
         val SHOW_DISABLED = booleanPreferencesKey("show_disabled")
         /** 已勾选的安装来源标签集合 */
         val SELECTED_INSTALLERS = stringSetPreferencesKey("selected_installers")
+
+        /** 配置的更新地址 (URL) */
+        val UPDATE_URL = stringPreferencesKey("update_url")
     }
 
     private companion object {
         /**
-         * DataStore 的 StringSet 不支持存放 null，
+         * DataStore 的StringSet 不支持存放 null，
          * 用该哨兵值代表"未知来源（null）"，读写时做双向转换。
          */
         const val NULL_LABEL_KEY = "__null_label__"
@@ -90,6 +94,12 @@ class SettingsRepository(private val context: Context) {
         }
 
     /**
+     * 配置的更新地址流。
+     */
+    val updateUrl: Flow<String> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.UPDATE_URL] ?: "" }
+
+    /**
      * 持久化主题配置。
      *
      * @param themeConfig 要保存的主题模式
@@ -137,6 +147,17 @@ class SettingsRepository(private val context: Context) {
     suspend fun setSelectedInstallers(installers: Set<String?>) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SELECTED_INSTALLERS] = installers.map { it ?: NULL_LABEL_KEY }.toSet()
+        }
+    }
+
+    /**
+     * 持久化配置的更新地址。
+     *
+     * @param url 要保存的更新地址
+     */
+    suspend fun saveUpdateUrl(url: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.UPDATE_URL] = url
         }
     }
 }

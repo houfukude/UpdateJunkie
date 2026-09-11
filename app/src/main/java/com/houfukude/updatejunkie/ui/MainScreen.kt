@@ -112,6 +112,8 @@ fun MainScreen(
         onToggleDisabled = { viewModel.toggleDisabledFilter() },
         onRefresh = { viewModel.loadApps() },
         onSettingsClick = onSettingsClick,
+        onGetUpdateUrl = { viewModel.getUpdateUrl(it) },
+        onSetUpdateUrl = { pkg, url -> viewModel.setUpdateUrl(pkg, url) },
         onRequestShizukuPermission = { viewModel.requestShizukuPermission() },
         onDownloadShizuku = {
             val intent = Intent(Intent.ACTION_VIEW, "https://shizuku.rikka.app/download/".toUri())
@@ -169,6 +171,8 @@ fun MainScreenContent(
     onToggleDisabled: () -> Unit,
     onRefresh: () -> Unit,
     onSettingsClick: () -> Unit,
+    onGetUpdateUrl: (String) -> String?,
+    onSetUpdateUrl: (String, String) -> Unit,
     onRequestShizukuPermission: () -> Unit,
     onDownloadShizuku: () -> Unit
 ) {
@@ -300,7 +304,9 @@ fun MainScreenContent(
                 is AppListUiState.Success -> {
                     AppList(
                         apps = state.apps,
-                        headerContent = header
+                        headerContent = header,
+                        onGetUpdateUrl = onGetUpdateUrl,
+                        onSetUpdateUrl = onSetUpdateUrl
                     )
                 }
 
@@ -399,6 +405,8 @@ fun MainScreenPreview() {
             onToggleDisabled = {},
             onRefresh = {},
             onSettingsClick = {},
+            onGetUpdateUrl = { null },
+            onSetUpdateUrl = { _, _ -> },
             onRequestShizukuPermission = {},
             onDownloadShizuku = {}
         )
@@ -436,6 +444,8 @@ fun FilterMenuPreview() {
             onToggleDisabled = {},
             onRefresh = {},
             onSettingsClick = {},
+            onGetUpdateUrl = { null },
+            onSetUpdateUrl = { _, _ -> },
             onRequestShizukuPermission = {},
             onDownloadShizuku = {}
         )

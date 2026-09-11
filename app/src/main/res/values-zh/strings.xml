@@ -43,4 +43,8 @@
     <string name="menu_configure_update_url">配置更新地址</string>
     <string name="menu_go_to_update_url">前往更新地址</string>
     <string name="update_url_not_set">尚未配置更新地址</string>
+    <string name="configure_update_url_title">配置更新地址</string>
+    <string name="update_url_label">更新地址 (URL)</string>
+    <string name="save">保存</string>
+    <string name="update_url_saved">更新地址已保存</string>
 </resources>

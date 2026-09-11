@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -27,8 +28,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import coil.compose.rememberAsyncImagePainter
 import com.houfukude.updatejunkie.R
 import com.houfukude.updatejunkie.model.AppInfo
@@ -58,12 +62,18 @@ import com.houfukude.updatejunkie.utils.MarketUtils
  * @param apps 待展示的应用列表
  * @param modifier 列表容器修饰符
  * @param headerContent 置顶的头部内容（如 Shizuku 状态卡片与加载进度），为 null 时不显示
+ * @param onGetUpdateUrl 获取应用更新 URL 的回调
+ * @param onSetUpdateUrl 设置应用更新 URL 的回调
+ * @param initialExpandedPackageName 初始展开菜单的应用包名（仅用于预览或特定引导）
  */
 @Composable
 fun AppList(
     apps: List<AppInfo>,
     modifier: Modifier = Modifier,
-    headerContent: (@Composable () -> Unit)? = null
+    headerContent: (@Composable () -> Unit)? = null,
+    onGetUpdateUrl: (String) -> String? = { null },
+    onSetUpdateUrl: (String, String) -> Unit = { _, _ -> },
+    initialExpandedPackageName: String? = null
 ) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
         if (headerContent != null) {
@@ -72,7 +82,12 @@ fun AppList(
             }
         }
         items(apps, key = { it.packageName + it.userId }) { app ->
-            AppItem(app = app)
+            AppItem(
+                app = app,
+                onGetUpdateUrl = onGetUpdateUrl,
+                onSetUpdateUrl = onSetUpdateUrl,
+                initialShowMenu = app.packageName == initialExpandedPackageName
+            )
         }
     }
 }
@@ -84,11 +99,21 @@ fun AppList(
  * 点击条目跳转到对应应用市场详情页，点击右侧箭头跳转到系统应用详情页。
  *
  * @param app 该条目对应的应用信息
+ * @param onGetUpdateUrl 获取应用更新 URL 的回调
+ * @param onSetUpdateUrl 设置应用更新 URL 的回调
+ * @param initialShowMenu 是否初始显示操作菜单
  */
 @Composable
-fun AppItem(app: AppInfo) {
+fun AppItem(
+    app: AppInfo,
+    onGetUpdateUrl: (String) -> String?,
+    onSetUpdateUrl: (String, String) -> Unit,
+    initialShowMenu: Boolean = false
+) {
     val context = LocalContext.current
-    var showMenu by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(initialShowMenu) }
+    var showDialog by remember { mutableStateOf(false) }
+
     val backgroundColor = when {
         !app.isEnabled -> colorResource(R.color.item_disabled_bg)
         app.isSystemApp -> colorResource(R.color.item_system_bg)
@@ -96,6 +121,18 @@ fun AppItem(app: AppInfo) {
         app.isAdbInstalled -> colorResource(R.color.item_adb_bg)
         else -> MarketUtils.getMarketColor(app.installerPackageName)?.let { colorResource(it) }
             ?: Color.Transparent
+    }
+
+    if (showDialog) {
+        UpdateConfigDialog(
+            initialUrl = onGetUpdateUrl(app.packageName) ?: "",
+            onDismiss = { showDialog = false },
+            onSave = { url ->
+                onSetUpdateUrl(app.packageName, url)
+                showDialog = false
+                Toast.makeText(context, R.string.update_url_saved, Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
     ListItem(
@@ -183,22 +220,34 @@ fun AppItem(app: AppInfo) {
                             text = { Text(stringResource(R.string.menu_configure_update_url)) },
                             onClick = {
                                 showMenu = false
-                                Toast.makeText(
-                                    context,
-                                    R.string.update_url_not_set,
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                showDialog = true
                             }
                         )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.menu_go_to_update_url)) },
                             onClick = {
                                 showMenu = false
-                                Toast.makeText(
-                                    context,
-                                    R.string.update_url_not_set,
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                val url = onGetUpdateUrl(app.packageName)
+                                if (url.isNullOrBlank()) {
+                                    Toast.makeText(
+                                        context,
+                                        R.string.update_url_not_set,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    try {
+                                        val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(
+                                            context,
+                                            e.localizedMessage,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
                             }
                         )
                     }
@@ -249,11 +298,51 @@ fun AppItem(app: AppInfo) {
     )
 }
 
+/**
+ * 用于配置应用更新地址的对话框。
+ *
+ * @param initialUrl 初始填入的 URL
+ * @param onDismiss 对话框取消回调
+ * @param onSave 点击保存回调，返回输入的 URL
+ */
+@Composable
+fun UpdateConfigDialog(
+    initialUrl: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var url by remember { mutableStateOf(initialUrl) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.configure_update_url_title)) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    label = { Text(stringResource(R.string.update_url_label)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(url) }) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // preview
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /** 普通应用与系统应用两种条目的样式预览。 */
 @Preview(showBackground = true)
@@ -274,7 +363,9 @@ fun AppItemPreview() {
                     isEnabled = true,
                     userId = "0",
                     isAdbInstalled = false
-                )
+                ),
+                onGetUpdateUrl = { null },
+                onSetUpdateUrl = { _, _ -> }
             )
             AppItem(
                 app = AppInfo(
@@ -289,13 +380,15 @@ fun AppItemPreview() {
                     isEnabled = true,
                     userId = "0",
                     isAdbInstalled = false
-                )
+                ),
+                onGetUpdateUrl = { null },
+                onSetUpdateUrl = { _, _ -> }
             )
         }
     }
 }
 
-/** 应用列表（无头部内容）的整体预览。 */
+/** 应用列表（无头部内容）的整体预览，展示第二项菜单展开的状态。 */
 @Preview(showBackground = true)
 @Composable
 fun AppListPreview() {
@@ -328,7 +421,8 @@ fun AppListPreview() {
                     userId = "0",
                     isAdbInstalled = false
                 )
-            )
+            ),
+            initialExpandedPackageName = "com.example.app2"
         )
     }
 }

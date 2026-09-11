@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.houfukude.updatejunkie.R
+import com.houfukude.updatejunkie.data.AppConfigRepository
 import com.houfukude.updatejunkie.data.AppLoadResult
 import com.houfukude.updatejunkie.data.AppRepository
 import com.houfukude.updatejunkie.data.SettingsRepository
@@ -33,6 +34,9 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     private val repository = AppRepository(application)
     /** 筛选条件持久化仓库。 */
     private val settingsRepository = SettingsRepository(application)
+
+    /** 应用配置（如更新 URL）持久化仓库。 */
+    private val appConfigRepository = AppConfigRepository(application)
 
     companion object {
         /** ADB / 命令行安装的应用在筛选器中使用的统一标签（内部标识）。 */
@@ -261,6 +265,26 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
      */
     fun requestShizukuPermission() {
         ShizukuManager.requestPermission()
+    }
+
+    /**
+     * 获取指定应用的更新 URL。
+     *
+     * @param packageName 应用包名
+     * @return 配置的 URL，若未设置则为 null
+     */
+    fun getUpdateUrl(packageName: String): String? {
+        return appConfigRepository.getUpdateUrl(packageName)
+    }
+
+    /**
+     * 设置并保存指定应用的更新 URL。
+     *
+     * @param packageName 应用包名
+     * @param url 更新地址
+     */
+    fun setUpdateUrl(packageName: String, url: String) {
+        appConfigRepository.setUpdateUrl(packageName, url)
     }
 }
 

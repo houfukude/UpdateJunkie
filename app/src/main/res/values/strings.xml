@@ -43,4 +43,8 @@
     <string name="menu_configure_update_url">Configure update URL</string>
     <string name="menu_go_to_update_url">Go to update URL</string>
     <string name="update_url_not_set">Update URL not set</string>
+    <string name="configure_update_url_title">Configure Update URL</string>
+    <string name="update_url_label">Update URL</string>
+    <string name="save">Save</string>
+    <string name="update_url_saved">Update URL saved</string>
 </resources>
