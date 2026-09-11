@@ -28,5 +28,6 @@ data class AppInfo(
     val isSystemApp: Boolean,
     val isEnabled: Boolean,
     val userId: String,
-    val isAdbInstalled: Boolean
+    val isAdbInstalled: Boolean,
+    val hasUpdateUrl: Boolean = false
 )

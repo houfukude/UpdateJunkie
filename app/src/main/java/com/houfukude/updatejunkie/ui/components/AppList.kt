@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -137,6 +138,20 @@ fun AppItem(
 
     ListItem(
         modifier = Modifier.clickable {
+            if (app.hasUpdateUrl) {
+                val url = onGetUpdateUrl(app.packageName)
+                if (!url.isNullOrBlank()) {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, e.localizedMessage, Toast.LENGTH_SHORT).show()
+                    }
+                    return@clickable
+                }
+            }
             MarketUtils.launchMarket(context, app.packageName, app.installerPackageName)
         },
         colors = ListItemDefaults.colors(containerColor = backgroundColor),
@@ -293,6 +308,27 @@ fun AppItem(
                         .size(48.dp)
                         .then(if (!app.isEnabled) Modifier.graphicsLayer(alpha = 0.5f) else Modifier)
                 )
+                if (app.hasUpdateUrl) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = MaterialTheme.shapes.extraSmall,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .graphicsLayer {
+                                translationX = 4.dp.toPx()
+                                translationY = 4.dp.toPx()
+                            }
+                    ) {
+                        Icon(
+                            Icons.Default.Link,
+                            contentDescription = "Configured",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(12.dp)
+                                .padding(1.dp)
+                        )
+                    }
+                }
             }
         }
     )
@@ -362,7 +398,8 @@ fun AppItemPreview() {
                     isSystemApp = false,
                     isEnabled = true,
                     userId = "0",
-                    isAdbInstalled = false
+                    isAdbInstalled = false,
+                    hasUpdateUrl = true
                 ),
                 onGetUpdateUrl = { null },
                 onSetUpdateUrl = { _, _ -> }
@@ -379,7 +416,8 @@ fun AppItemPreview() {
                     isSystemApp = true,
                     isEnabled = true,
                     userId = "0",
-                    isAdbInstalled = false
+                    isAdbInstalled = false,
+                    hasUpdateUrl = true
                 ),
                 onGetUpdateUrl = { null },
                 onSetUpdateUrl = { _, _ -> }
@@ -406,7 +444,8 @@ fun AppListPreview() {
                     isSystemApp = false,
                     isEnabled = true,
                     userId = "0",
-                    isAdbInstalled = false
+                    isAdbInstalled = false,
+                    hasUpdateUrl = true
                 ),
                 AppInfo(
                     packageName = "com.example.app2",

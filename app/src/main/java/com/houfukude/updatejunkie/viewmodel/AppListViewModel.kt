@@ -197,7 +197,10 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                                 _loadProgressText.value = "0 / $totalCount"
                             }
                             is AppLoadResult.App -> {
-                                val appInfo = result.app
+                                val appInfo = result.app.copy(
+                                    hasUpdateUrl = !appConfigRepository.getUpdateUrl(result.app.packageName)
+                                        .isNullOrBlank()
+                                )
                                 // 增量添加并重新排序
                                 val currentList = _allApps.value.toMutableList()
                                 currentList.add(appInfo)
@@ -285,6 +288,13 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
      */
     fun setUpdateUrl(packageName: String, url: String) {
         appConfigRepository.setUpdateUrl(packageName, url)
+        // 更新本地列表中的状态，触发 UI 刷新
+        val currentList = _allApps.value.toMutableList()
+        val index = currentList.indexOfFirst { it.packageName == packageName }
+        if (index != -1) {
+            currentList[index] = currentList[index].copy(hasUpdateUrl = url.isNotBlank())
+            _allApps.value = currentList
+        }
     }
 }
 
