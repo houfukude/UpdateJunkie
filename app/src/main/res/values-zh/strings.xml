@@ -51,6 +51,7 @@
     <string name="export_config">导出配置</string>
     <string name="import_via_url">通过 URL 导入</string>
     <string name="import_via_file">通过文件导入</string>
+    <string name="export_via_file">通过文件导出</string>
     <string name="import_dialog_title">导入配置</string>
     <string name="export_dialog_title">导出配置</string>
     <string name="invalid_config_format">无效的配置格式</string>

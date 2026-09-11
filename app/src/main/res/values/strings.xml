@@ -51,6 +51,7 @@
     <string name="export_config">Export Configuration</string>
     <string name="import_via_url">Import via URL</string>
     <string name="import_via_file">Import via File</string>
+    <string name="export_via_file">Export via File</string>
     <string name="import_dialog_title">Import Config</string>
     <string name="export_dialog_title">Export Config</string>
     <string name="invalid_config_format">Invalid configuration format</string>

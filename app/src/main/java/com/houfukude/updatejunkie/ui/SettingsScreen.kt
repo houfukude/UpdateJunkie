@@ -141,6 +141,7 @@ fun SettingsScreenContent(
     var showThemeDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
+    var showExportDialog by remember { mutableStateOf(false) }
     var showUrlImportDialog by remember { mutableStateOf(false) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -202,7 +203,7 @@ fun SettingsScreenContent(
             ListItem(
                 headlineContent = { Text(stringResource(R.string.export_config)) },
                 leadingContent = { Icon(Icons.Default.FileDownload, contentDescription = null) },
-                modifier = Modifier.clickable { fileSaverLauncher.launch("app_configs.json") }
+                modifier = Modifier.clickable { showExportDialog = true }
             )
             ListItem(
                 headlineContent = { Text(stringResource(R.string.about)) },
@@ -343,6 +344,37 @@ fun SettingsScreenContent(
             },
             dismissButton = {
                 TextButton(onClick = { showUrlImportDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (showExportDialog) {
+        AlertDialog(
+            onDismissRequest = { showExportDialog = false },
+            title = { Text(stringResource(R.string.export_dialog_title)) },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilledTonalButton(
+                        onClick = {
+                            showExportDialog = false
+                            fileSaverLauncher.launch("app_configs.json")
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(16.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.InsertDriveFile, contentDescription = null)
+                        Spacer(Modifier.width(12.dp))
+                        Text(stringResource(R.string.export_via_file))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showExportDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             }
