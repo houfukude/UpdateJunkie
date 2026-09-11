@@ -38,4 +38,6 @@
     <string name="user_prefix">用户: %s</string>
     <string name="version_prefix">版本: %1$s (%2$d)</string>
     <string name="disabled_badge">已禁用</string>
+    <string name="menu_go_to_settings">应用信息</string>
+    <string name="menu_go_to_market">前往应用市场</string>
 </resources>
