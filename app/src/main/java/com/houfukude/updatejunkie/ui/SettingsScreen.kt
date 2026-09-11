@@ -2,17 +2,21 @@ package com.houfukude.updatejunkie.ui
 
 import android.content.Intent
 import android.net.Uri
+import android.net.nsd.NsdServiceInfo
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
@@ -25,11 +29,14 @@ import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -97,6 +104,12 @@ fun SettingsScreen(
         onImportFile = { viewModel.importConfigFromFile(it) },
         onImportUrl = { viewModel.importConfigFromUrl(it) },
         onExport = { viewModel.exportConfig(it) },
+        discoveredDevices = viewModel.discoveredDevices.collectAsState().value,
+        onStartLanDiscovery = { viewModel.startLanDiscovery() },
+        onStopLanDiscovery = { viewModel.stopLanDiscovery() },
+        onImportFromLan = { viewModel.importFromLanDevice(it) },
+        isLanServerRunning = viewModel.isLanServerRunning.collectAsState().value,
+        onToggleLanServer = { viewModel.toggleLanServer() },
         onAboutClick = {
             val intent = Intent(
                 Intent.ACTION_VIEW,
@@ -122,6 +135,12 @@ fun SettingsScreen(
  * @param onImportFile 通过文件导入的回调
  * @param onImportUrl 通过 URL 导入的回调
  * @param onExport 导出配置的回调
+ * @param discoveredDevices 局域网发现的设备列表
+ * @param onStartLanDiscovery 开始局域网扫描的回调
+ * @param onStopLanDiscovery 停止局域网扫描的回调
+ * @param onImportFromLan 从局域网设备导入的回调
+ * @param isLanServerRunning 局域网服务端运行状态
+ * @param onToggleLanServer 切换局域网服务端状态的回调
  * @param onAboutClick 点击“关于”项时的回调
  * @param onBack 点击返回箭头时的回调
  */
@@ -135,6 +154,12 @@ fun SettingsScreenContent(
     onImportFile: (Uri) -> Unit,
     onImportUrl: (String) -> Unit,
     onExport: (Uri) -> Unit,
+    discoveredDevices: List<NsdServiceInfo>,
+    onStartLanDiscovery: () -> Unit,
+    onStopLanDiscovery: () -> Unit,
+    onImportFromLan: (NsdServiceInfo) -> Unit,
+    isLanServerRunning: Boolean,
+    onToggleLanServer: () -> Unit,
     onAboutClick: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -143,6 +168,7 @@ fun SettingsScreenContent(
     var showImportDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
     var showUrlImportDialog by remember { mutableStateOf(false) }
+    var showLanDiscoveryDialog by remember { mutableStateOf(false) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -310,6 +336,19 @@ fun SettingsScreenContent(
                         Spacer(Modifier.width(12.dp))
                         Text(stringResource(R.string.import_via_file))
                     }
+                    FilledTonalButton(
+                        onClick = {
+                            showImportDialog = false
+                            onStartLanDiscovery()
+                            showLanDiscoveryDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(16.dp)
+                    ) {
+                        Icon(Icons.Default.Language, contentDescription = null)
+                        Spacer(Modifier.width(12.dp))
+                        Text(stringResource(R.string.import_via_lan))
+                    }
                 }
             },
             confirmButton = {
@@ -351,6 +390,9 @@ fun SettingsScreenContent(
     }
 
     if (showExportDialog) {
+        val context = LocalContext.current
+        val exportFileName = "${context.packageName}_${BuildConfig.VERSION_NAME}_config.json"
+        
         AlertDialog(
             onDismissRequest = { showExportDialog = false },
             title = { Text(stringResource(R.string.export_dialog_title)) },
@@ -362,7 +404,7 @@ fun SettingsScreenContent(
                     FilledTonalButton(
                         onClick = {
                             showExportDialog = false
-                            fileSaverLauncher.launch("app_configs.json")
+                            fileSaverLauncher.launch(exportFileName)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(16.dp)
@@ -371,10 +413,95 @@ fun SettingsScreenContent(
                         Spacer(Modifier.width(12.dp))
                         Text(stringResource(R.string.export_via_file))
                     }
+                    FilledTonalButton(
+                        onClick = {
+                            onToggleLanServer()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(16.dp),
+                        colors = if (isLanServerRunning) {
+                            ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        } else {
+                            ButtonDefaults.filledTonalButtonColors()
+                        }
+                    ) {
+                        Icon(Icons.Default.Language, contentDescription = null)
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(stringResource(R.string.export_via_lan))
+                            Text(
+                                stringResource(
+                                    R.string.lan_service_status,
+                                    if (isLanServerRunning) stringResource(R.string.lan_service_on)
+                                    else stringResource(R.string.lan_service_off)
+                                ),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { showExportDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (showLanDiscoveryDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                onStopLanDiscovery()
+                showLanDiscoveryDialog = false
+            },
+            title = { Text(stringResource(R.string.select_device)) },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    if (discoveredDevices.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    stringResource(R.string.searching_lan),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    } else {
+                        discoveredDevices.forEach { device ->
+                            ListItem(
+                                headlineContent = { Text(device.serviceName) },
+                                supportingContent = { Text("${device.host?.hostAddress}:${device.port}") },
+                                leadingContent = {
+                                    Icon(
+                                        Icons.Default.Language,
+                                        contentDescription = null
+                                    )
+                                },
+                                modifier = Modifier.clickable {
+                                    onImportFromLan(device)
+                                    showLanDiscoveryDialog = false
+                                }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onStopLanDiscovery()
+                    showLanDiscoveryDialog = false
+                }) {
                     Text(stringResource(R.string.cancel))
                 }
             }
@@ -434,6 +561,12 @@ fun SettingsScreenPreview() {
             onImportFile = {},
             onImportUrl = {},
             onExport = {},
+            discoveredDevices = emptyList(),
+            onStartLanDiscovery = {},
+            onStopLanDiscovery = {},
+            onImportFromLan = {},
+            isLanServerRunning = false,
+            onToggleLanServer = {},
             onAboutClick = {},
             onBack = {}
         )

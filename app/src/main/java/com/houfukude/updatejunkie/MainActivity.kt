@@ -1,23 +1,30 @@
 package com.houfukude.updatejunkie
 
-import androidx.activity.compose.BackHandler
-import androidx.activity.viewModels
 import android.os.Bundle
+import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.core.os.LocaleListCompat
-import com.houfukude.updatejunkie.data.ThemeConfig
 import com.houfukude.updatejunkie.data.LanguageConfig
-import com.houfukude.updatejunkie.viewmodel.AppListViewModel
-import com.houfukude.updatejunkie.viewmodel.SettingsViewModel
+import com.houfukude.updatejunkie.data.ThemeConfig
+import com.houfukude.updatejunkie.shizuku.ShizukuManager
 import com.houfukude.updatejunkie.ui.MainScreen
 import com.houfukude.updatejunkie.ui.Screen
 import com.houfukude.updatejunkie.ui.SettingsScreen
 import com.houfukude.updatejunkie.ui.theme.UpdateJunkieTheme
+import com.houfukude.updatejunkie.viewmodel.AppListViewModel
+import com.houfukude.updatejunkie.viewmodel.SettingsViewModel
 import rikka.shizuku.Shizuku
 
 /**
@@ -54,8 +61,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        Shizuku.addBinderReceivedListener(binderReceivedListener)
-        Shizuku.addRequestPermissionResultListener(permissionResultListener)
+        // 初始化 Shizuku 管理器并注册监听器
+        ShizukuManager.init()
+        try {
+            Shizuku.addBinderReceivedListener(binderReceivedListener)
+            Shizuku.addRequestPermissionResultListener(permissionResultListener)
+        } catch (e: Throwable) {
+            Log.e("MainActivity", "Failed to add Shizuku listeners", e)
+        }
 
         setContent {
             val themeConfig by settingsViewModel.themeConfig.collectAsState()
@@ -103,7 +116,12 @@ class MainActivity : AppCompatActivity() {
     /** Activity 销毁时注销 Shizuku 监听，避免内存泄漏。 */
     override fun onDestroy() {
         super.onDestroy()
-        Shizuku.removeBinderReceivedListener(binderReceivedListener)
-        Shizuku.removeRequestPermissionResultListener(permissionResultListener)
+        try {
+            Shizuku.removeBinderReceivedListener(binderReceivedListener)
+            Shizuku.removeRequestPermissionResultListener(permissionResultListener)
+        } catch (e: Throwable) {
+            // 忽略销毁时的 Binder 异常，防止由于 Binder 已死亡导致的二次崩溃
+            Log.w("MainActivity", "Error removing Shizuku listeners", e)
+        }
     }
 }

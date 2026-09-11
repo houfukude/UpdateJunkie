@@ -2,6 +2,7 @@ package com.houfukude.updatejunkie.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import android.net.nsd.NsdServiceInfo
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.houfukude.updatejunkie.R
@@ -9,6 +10,7 @@ import com.houfukude.updatejunkie.data.AppConfigRepository
 import com.houfukude.updatejunkie.data.LanguageConfig
 import com.houfukude.updatejunkie.data.SettingsRepository
 import com.houfukude.updatejunkie.data.ThemeConfig
+import com.houfukude.updatejunkie.utils.LanManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -33,8 +35,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /** 应用特定配置仓库。 */
     private val appConfigRepository = AppConfigRepository(application)
 
+    /** 局域网共享管理器。 */
+    private val lanManager = LanManager(application)
+
     private val _eventFlow = MutableSharedFlow<SettingsEvent>()
     val eventFlow: SharedFlow<SettingsEvent> = _eventFlow.asSharedFlow()
+
+    /** 局域网发现的设备列表。 */
+    val discoveredDevices = lanManager.discoveredDevices
+
+    /** 局域网服务端状态。 */
+    val isLanServerRunning = lanManager.isServerRunning
 
     sealed class SettingsEvent {
         data class ShowToast(val messageRes: Int) : SettingsEvent()
@@ -151,5 +162,38 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         } catch (e: Exception) {
             _eventFlow.emit(SettingsEvent.ShowToast(R.string.invalid_config_format))
         }
+    }
+
+    /** 开始局域网发现。 */
+    fun startLanDiscovery() = lanManager.startDiscovery()
+
+    /** 停止局域网发现。 */
+    fun stopLanDiscovery() = lanManager.stopDiscovery()
+
+    /** 切换局域网服务端。 */
+    fun toggleLanServer() {
+        if (lanManager.isServerRunning.value) {
+            lanManager.stopServer()
+        } else {
+            lanManager.startServer { appConfigRepository.getAllConfigs().toString() }
+        }
+    }
+
+    /** 从发现的设备导入。 */
+    fun importFromLanDevice(device: NsdServiceInfo) {
+        viewModelScope.launch {
+            val json = lanManager.fetchConfig(device)
+            if (json != null) {
+                processImport(json)
+            } else {
+                _eventFlow.emit(SettingsEvent.Error("Import failed from ${device.serviceName}"))
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        lanManager.stopServer()
+        lanManager.stopDiscovery()
     }
 }

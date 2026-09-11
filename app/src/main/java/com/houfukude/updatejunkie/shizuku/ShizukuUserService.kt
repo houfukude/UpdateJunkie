@@ -59,6 +59,10 @@ class ShizukuUserService(context: Context? = null) : IShizukuService.Stub() {
             }
         } catch (e: Exception) {
             Log.e("ShizukuUserService", "Service execution error", e)
+            // 如果在执行过程中 Binder 死亡或出现异常，返回已获取的部分数据或空数据
+        } catch (e: Throwable) {
+            // 捕获可能的 NoSuchElementException 或其他非 Exception 异常
+            Log.e("ShizukuUserService", "Unexpected error in service", e)
         }
 
         return bundleOf(

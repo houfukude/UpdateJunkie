@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
+import android.util.Log
 import com.houfukude.updatejunkie.IShizukuService
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +26,25 @@ object ShizukuManager {
     private var userService: IShizukuService? = null
     private var serviceDeferred = CompletableDeferred<IShizukuService>()
     private var isBinding = false
+
+    private val binderDeadListener = Shizuku.OnBinderDeadListener {
+        Log.e("ShizukuManager", "Shizuku binder died")
+        userService = null
+        if (serviceDeferred.isCompleted) {
+            serviceDeferred = CompletableDeferred()
+        }
+    }
+
+    /**
+     * 初始化 Shizuku 管理器，注册必要的全局监听器。
+     */
+    fun init() {
+        try {
+            Shizuku.addBinderDeadListener(binderDeadListener)
+        } catch (e: Throwable) {
+            Log.e("ShizukuManager", "Failed to add binder dead listener", e)
+        }
+    }
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -161,6 +181,10 @@ object ShizukuManager {
     fun isAvailable(): Boolean {
         return try {
             Shizuku.pingBinder()
+        } catch (e: NoSuchElementException) {
+            // 捕获 "Death link does not exist" 相关的异常
+            Log.w("ShizukuManager", "pingBinder: Death link not found")
+            false
         } catch (e: Throwable) {
             e.printStackTrace()
             false
@@ -173,6 +197,9 @@ object ShizukuManager {
             else Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
             android.util.Log.d("ShizukuManager", "hasPermission: $res")
             res
+        } catch (e: NoSuchElementException) {
+            Log.w("ShizukuManager", "checkSelfPermission: Death link not found")
+            false
         } catch (e: Throwable) {
             android.util.Log.e("ShizukuManager", "checkPermission failed", e)
             false
