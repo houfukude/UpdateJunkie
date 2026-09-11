@@ -191,6 +191,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * 获取所有应用配置的 JSON 字符串。
+     */
+    fun getConfigJson(): String {
+        return appConfigRepository.getAllConfigs().toString(2)
+    }
+
     override fun onCleared() {
         super.onCleared()
         lanManager.stopServer()

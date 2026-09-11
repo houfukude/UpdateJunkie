@@ -11,8 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -27,8 +30,11 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +42,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -85,6 +94,7 @@ fun MainScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val loadProgress by viewModel.loadProgress.collectAsState()
     val loadProgressText by viewModel.loadProgressText.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
 
     val availableInstallers by viewModel.availableInstallers.collectAsState()
     val selectedInstallers by viewModel.selectedInstallers.collectAsState()
@@ -92,6 +102,7 @@ fun MainScreen(
     val showDisabled by viewModel.showDisabled.collectAsState()
 
     var showFilterMenu by remember { mutableStateOf(false) }
+    var isSearchActive by remember { mutableStateOf(false) }
 
     MainScreenContent(
         uiState = uiState,
@@ -101,6 +112,13 @@ fun MainScreen(
         isRefreshing = isRefreshing,
         loadProgress = loadProgress,
         loadProgressText = loadProgressText,
+        searchQuery = searchQuery,
+        onSearchQueryChange = { viewModel.setSearchQuery(it) },
+        isSearchActive = isSearchActive,
+        onToggleSearch = {
+            isSearchActive = !isSearchActive
+            if (!isSearchActive) viewModel.setSearchQuery("")
+        },
         availableInstallers = availableInstallers,
         selectedInstallers = selectedInstallers,
         showSystem = showSystem,
@@ -160,6 +178,10 @@ fun MainScreenContent(
     isRefreshing: Boolean,
     loadProgress: Float,
     loadProgressText: String,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    isSearchActive: Boolean,
+    onToggleSearch: () -> Unit,
     availableInstallers: List<String?>,
     selectedInstallers: Set<String?>,
     showSystem: Boolean,
@@ -176,66 +198,148 @@ fun MainScreenContent(
     onRequestShizukuPermission: () -> Unit,
     onDownloadShizuku: () -> Unit
 ) {
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isSearchActive) {
+        if (isSearchActive) {
+            focusRequester.requestFocus()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
-                actions = {
-                    IconButton(onClick = onRefresh) {
-                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
-                    }
-                    Box {
-                        IconButton(
-                            onClick = onToggleFilterMenu,
-                            colors = if (showFilterMenu) {
-                                IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            } else {
-                                IconButtonDefaults.iconButtonColors()
-                            }
-                        ) {
-                            Icon(Icons.Default.FilterList, contentDescription = stringResource(R.string.filter))
+                navigationIcon = {
+                    if (isSearchActive) {
+                        IconButton(onClick = onToggleSearch) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
+                            )
                         }
-                        DropdownMenu(
-                            expanded = showFilterMenu,
-                            onDismissRequest = onToggleFilterMenu
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.show_system_apps)) },
-                                trailingIcon = { Checkbox(checked = showSystem, onCheckedChange = null) },
-                                onClick = onToggleSystem
+                    }
+                },
+                title = {
+                    if (isSearchActive) {
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = onSearchQueryChange,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focusRequester),
+                            placeholder = {
+                                Text(
+                                    stringResource(R.string.search_hint),
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodyLarge,
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { onSearchQueryChange("") }) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = stringResource(R.string.refresh)
+                                        )
+                                    }
+                                }
+                            },
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
                             )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.show_disabled_apps)) },
-                                trailingIcon = { Checkbox(checked = showDisabled, onCheckedChange = null) },
-                                onClick = onToggleDisabled
+                        )
+                    } else {
+                        Text(stringResource(R.string.app_name))
+                    }
+                },
+                actions = {
+                    if (!isSearchActive) {
+                        IconButton(onClick = onRefresh) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = stringResource(R.string.refresh)
                             )
-                            HorizontalDivider()
-                            availableInstallers.forEach { label ->
+                        }
+                        IconButton(onClick = onToggleSearch) {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = stringResource(R.string.search)
+                            )
+                        }
+                        Box {
+                            IconButton(
+                                onClick = onToggleFilterMenu,
+                                colors = if (showFilterMenu) {
+                                    IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                } else {
+                                    IconButtonDefaults.iconButtonColors()
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.FilterList,
+                                    contentDescription = stringResource(R.string.filter)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showFilterMenu,
+                                onDismissRequest = onToggleFilterMenu
+                            ) {
                                 DropdownMenuItem(
-                                    text = {
-                                        val displayLabel = when (label) {
-                                            null -> stringResource(R.string.unknown)
-                                            AppListViewModel.ADB_INSTALLER -> stringResource(R.string.adb_installed)
-                                            else -> label
-                                        }
-                                        Text(displayLabel)
-                                    },
+                                    text = { Text(stringResource(R.string.show_system_apps)) },
                                     trailingIcon = {
                                         Checkbox(
-                                            checked = selectedInstallers.contains(label),
+                                            checked = showSystem,
                                             onCheckedChange = null
                                         )
                                     },
-                                    onClick = { onToggleInstaller(label) }
+                                    onClick = onToggleSystem
                                 )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.show_disabled_apps)) },
+                                    trailingIcon = {
+                                        Checkbox(
+                                            checked = showDisabled,
+                                            onCheckedChange = null
+                                        )
+                                    },
+                                    onClick = onToggleDisabled
+                                )
+                                HorizontalDivider()
+                                availableInstallers.forEach { label ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            val displayLabel = when (label) {
+                                                null -> stringResource(R.string.unknown)
+                                                AppListViewModel.ADB_INSTALLER -> stringResource(R.string.adb_installed)
+                                                else -> label
+                                            }
+                                            Text(displayLabel)
+                                        },
+                                        trailingIcon = {
+                                            Checkbox(
+                                                checked = selectedInstallers.contains(label),
+                                                onCheckedChange = null
+                                            )
+                                        },
+                                        onClick = { onToggleInstaller(label) }
+                                    )
+                                }
                             }
                         }
-                    }
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings))
+                        IconButton(onClick = onSettingsClick) {
+                            Icon(
+                                Icons.Default.Settings,
+                                contentDescription = stringResource(R.string.settings)
+                            )
+                        }
                     }
                 }
             )
@@ -394,6 +498,10 @@ fun MainScreenPreview() {
             isRefreshing = true,
             loadProgress = 0.5f,
             loadProgressText = "50 / 100",
+            searchQuery = "",
+            onSearchQueryChange = {},
+            isSearchActive = false,
+            onToggleSearch = {},
             availableInstallers = listOf("Google Play Store", "Coolapk"),
             selectedInstallers = emptySet(),
             showSystem = true,
@@ -433,6 +541,10 @@ fun FilterMenuPreview() {
             isRefreshing = false,
             loadProgress = 1.0f,
             loadProgressText = "100 / 100",
+            searchQuery = "",
+            onSearchQueryChange = {},
+            isSearchActive = false,
+            onToggleSearch = {},
             availableInstallers = listOf("Google Play Store", "Coolapk", "ADB 安装"),
             selectedInstallers = setOf("Coolapk"),
             showSystem = true,

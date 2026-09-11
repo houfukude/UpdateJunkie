@@ -2,6 +2,8 @@
     <string name="app_name">更新控</string>
     <string name="settings">设置</string>
     <string name="refresh">刷新</string>
+    <string name="search">搜索</string>
+    <string name="search_hint">搜索应用名称或包名</string>
     <string name="filter">筛选</string>
     <string name="show_system_apps">显示系统应用</string>
     <string name="show_disabled_apps">显示已禁用应用</string>
@@ -48,6 +50,7 @@
     <string name="save">保存</string>
     <string name="update_url_saved">更新地址已保存</string>
     <string name="import_config">导入配置</string>
+    <string name="view_config">查看配置</string>
     <string name="export_config">导出配置</string>
     <string name="import_via_url">通过 URL 导入</string>
     <string name="import_via_file">通过文件导入</string>

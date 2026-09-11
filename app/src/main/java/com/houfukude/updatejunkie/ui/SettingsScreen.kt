@@ -15,10 +15,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
@@ -104,6 +107,7 @@ fun SettingsScreen(
         onImportFile = { viewModel.importConfigFromFile(it) },
         onImportUrl = { viewModel.importConfigFromUrl(it) },
         onExport = { viewModel.exportConfig(it) },
+        onViewConfig = { viewModel.getConfigJson() },
         discoveredDevices = viewModel.discoveredDevices.collectAsState().value,
         onStartLanDiscovery = { viewModel.startLanDiscovery() },
         onStopLanDiscovery = { viewModel.stopLanDiscovery() },
@@ -154,6 +158,7 @@ fun SettingsScreenContent(
     onImportFile: (Uri) -> Unit,
     onImportUrl: (String) -> Unit,
     onExport: (Uri) -> Unit,
+    onViewConfig: () -> String,
     discoveredDevices: List<NsdServiceInfo>,
     onStartLanDiscovery: () -> Unit,
     onStopLanDiscovery: () -> Unit,
@@ -169,6 +174,7 @@ fun SettingsScreenContent(
     var showExportDialog by remember { mutableStateOf(false) }
     var showUrlImportDialog by remember { mutableStateOf(false) }
     var showLanDiscoveryDialog by remember { mutableStateOf(false) }
+    var showViewConfigDialog by remember { mutableStateOf(false) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -227,6 +233,11 @@ fun SettingsScreenContent(
                 modifier = Modifier.clickable { showImportDialog = true }
             )
             ListItem(
+                headlineContent = { Text(stringResource(R.string.view_config)) },
+                leadingContent = { Icon(Icons.Default.Info, contentDescription = null) },
+                modifier = Modifier.clickable { showViewConfigDialog = true }
+            )
+            ListItem(
                 headlineContent = { Text(stringResource(R.string.export_config)) },
                 leadingContent = { Icon(Icons.Default.FileDownload, contentDescription = null) },
                 modifier = Modifier.clickable { showExportDialog = true }
@@ -245,6 +256,33 @@ fun SettingsScreenContent(
                 modifier = Modifier.clickable { onAboutClick() }
             )
         }
+    }
+
+    if (showViewConfigDialog) {
+        AlertDialog(
+            onDismissRequest = { showViewConfigDialog = false },
+            title = { Text(stringResource(R.string.view_config)) },
+            text = {
+                val scrollState = rememberScrollState()
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp)
+                        .verticalScroll(scrollState)
+                ) {
+                    Text(
+                        text = onViewConfig(),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showViewConfigDialog = false }) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            }
+        )
     }
 
     if (showThemeDialog) {
@@ -561,6 +599,7 @@ fun SettingsScreenPreview() {
             onImportFile = {},
             onImportUrl = {},
             onExport = {},
+            onViewConfig = { "{}" },
             discoveredDevices = emptyList(),
             onStartLanDiscovery = {},
             onStopLanDiscovery = {},

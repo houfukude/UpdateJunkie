@@ -56,6 +56,12 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     /** 加载过程中的错误信息，null 表示无错误。 */
     private val _error = MutableStateFlow<String?>(null)
 
+    /** 搜索关键词。 */
+    private val _searchQuery = MutableStateFlow("")
+
+    /** 搜索关键词的 StateFlow。 */
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
     /** 是否正在加载应用列表。 */
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
     /** 加载进度，取值 0f ~ 1f。 */
@@ -81,20 +87,23 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
      * @property selectedInstallers 已勾选的安装来源标签；为空表示不过滤
      * @property showSystem 是否显示系统应用
      * @property showDisabled 是否显示已禁用的应用
+     * @property searchQuery 搜索关键词
      */
     data class FilterParams(
         val selectedInstallers: Set<String?>,
         val showSystem: Boolean,
-        val showDisabled: Boolean
+        val showDisabled: Boolean,
+        val searchQuery: String
     )
 
-    /** 将三个筛选条件流合并为单一的 [FilterParams] 流。 */
+    /** 将四个筛选条件流合并为单一的 [FilterParams] 流。 */
     private val filterParams = combine(
         selectedInstallers,
         showSystem,
-        showDisabled
-    ) { selected, showSystem, showDisabled ->
-        FilterParams(selected, showSystem, showDisabled)
+        showDisabled,
+        searchQuery
+    ) { selected, showSystem, showDisabled, query ->
+        FilterParams(selected, showSystem, showDisabled, query)
     }
 
     /**
@@ -130,7 +139,17 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                         val appSource = if (app.isAdbInstalled) ADB_INSTALLER else app.installerLabel
                         filters.selectedInstallers.contains(appSource)
                     }
-                    matchSystem && matchDisabled && matchInstaller
+                    val matchQuery = if (filters.searchQuery.isBlank()) {
+                        true
+                    } else {
+                        // 支持多关键词混合搜索（空格分隔），且同时匹配名称和包名
+                        val keywords = filters.searchQuery.trim().split(Regex("\\s+"))
+                        keywords.all { keyword ->
+                            app.label.contains(keyword, ignoreCase = true) ||
+                                    app.packageName.contains(keyword, ignoreCase = true)
+                        }
+                    }
+                    matchSystem && matchDisabled && matchInstaller && matchQuery
                 }
                 AppListUiState.Success(filteredApps)
             }
@@ -258,6 +277,15 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             settingsRepository.setShowDisabled(!showDisabled.value)
         }
+    }
+
+    /**
+     * 更新搜索关键词。
+     *
+     * @param query 搜索词
+     */
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
     }
 
     /**
