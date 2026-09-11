@@ -35,3 +35,4 @@ Thumbs.db
 
 .artifacts/
 .env
+test/
