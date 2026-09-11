@@ -40,4 +40,7 @@
     <string name="disabled_badge">已禁用</string>
     <string name="menu_go_to_settings">应用信息</string>
     <string name="menu_go_to_market">前往应用市场</string>
+    <string name="menu_configure_update_url">配置更新地址</string>
+    <string name="menu_go_to_update_url">前往更新地址</string>
+    <string name="update_url_not_set">尚未配置更新地址</string>
 </resources>

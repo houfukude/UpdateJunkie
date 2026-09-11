@@ -3,6 +3,7 @@ package com.houfukude.updatejunkie.ui.components
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -176,6 +177,28 @@ fun AppItem(app: AppInfo) {
                                     app.packageName,
                                     app.installerPackageName
                                 )
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.menu_configure_update_url)) },
+                            onClick = {
+                                showMenu = false
+                                Toast.makeText(
+                                    context,
+                                    R.string.update_url_not_set,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.menu_go_to_update_url)) },
+                            onClick = {
+                                showMenu = false
+                                Toast.makeText(
+                                    context,
+                                    R.string.update_url_not_set,
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         )
                     }

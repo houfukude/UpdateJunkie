@@ -40,4 +40,7 @@
     <string name="disabled_badge">Disabled</string>
     <string name="menu_go_to_settings">App info</string>
     <string name="menu_go_to_market">View in market</string>
+    <string name="menu_configure_update_url">Configure update URL</string>
+    <string name="menu_go_to_update_url">Go to update URL</string>
+    <string name="update_url_not_set">Update URL not set</string>
 </resources>

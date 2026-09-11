@@ -3,6 +3,7 @@ package com.houfukude.updatejunkie.shizuku
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
+import androidx.core.os.bundleOf
 import com.houfukude.updatejunkie.IShizukuService
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -17,7 +18,6 @@ class ShizukuUserService(context: Context? = null) : IShizukuService.Stub() {
 
     override fun getInstallInfo(packageName: String): Bundle {
         Log.d("ShizukuUserService", "getInstallInfo called for $packageName")
-        val result = Bundle()
         val userRegex = Pattern.compile("^\\s*User (\\d+):.*?\\binstalled=true\\b")
         val userIds = mutableListOf<Int>()
         
@@ -61,11 +61,11 @@ class ShizukuUserService(context: Context? = null) : IShizukuService.Stub() {
             Log.e("ShizukuUserService", "Service execution error", e)
         }
 
-        result.putString("initiating", initiating)
-        result.putString("originating", originating)
-        result.putIntArray("users", userIds.toIntArray())
-        
-        return result
+        return bundleOf(
+            "initiating" to initiating,
+            "originating" to originating,
+            "users" to userIds.toIntArray()
+        )
     }
 
     private fun parseValue(line: String): String? {

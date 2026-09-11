@@ -2,8 +2,8 @@ package com.houfukude.updatejunkie.utils
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.annotation.ColorRes
+import androidx.core.net.toUri
 import com.houfukude.updatejunkie.R
 
 /**
@@ -86,28 +86,28 @@ object MarketUtils {
     fun getMarketIntent(packageName: String, installerPackageName: String?): Intent {
         return when (installerPackageName) {
             "com.coolapk.market" -> {
-                Intent(Intent.ACTION_VIEW, Uri.parse("coolmarket://apk/$packageName"))
+                Intent(Intent.ACTION_VIEW, "coolmarket://apk/$packageName".toUri())
             }
 
             "com.xiaomi.market" -> {
-                Intent(Intent.ACTION_VIEW, Uri.parse("mimarket://details?id=$packageName"))
+                Intent(Intent.ACTION_VIEW, "mimarket://details?id=$packageName".toUri())
             }
 
             "com.huawei.appmarket" -> {
-                Intent(Intent.ACTION_VIEW, Uri.parse("appmarket://details?id=$packageName"))
+                Intent(Intent.ACTION_VIEW, "appmarket://details?id=$packageName".toUri())
             }
 
             else -> {
                 // Default market intent
-                Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName"))
+                Intent(Intent.ACTION_VIEW, "market://details?id=$packageName".toUri())
             }
         }
     }
 
     /**
-     * 启动应用市场详情页；若无任何可处理的市场应用，则回退到浏览器打开 Play 商店网页版。
+     * 启动应用市场详情页；若指定的市场应用无法处理（如未安装），则回退到系统通用的市场跳转协议。
      *
-     * 整个过程静默失败：若浏览器也无法打开，则不做任何处理。
+     * 整个过程静默失败：若系统中未安装任何应用市场，则不做处理。
      *
      * @param context 用于启动 Activity 的上下文
      * @param packageName 目标应用的包名
@@ -120,14 +120,15 @@ object MarketUtils {
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            // Fallback to browser or show error
+            // Fallback to universal market URI instead of hardcoded web link
             try {
-                val webIntent = Intent(
+                val fallbackIntent = Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
-                )
-                webIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(webIntent)
+                    "market://details?id=$packageName".toUri()
+                ).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(fallbackIntent)
             } catch (ignored: Exception) {
             }
         }

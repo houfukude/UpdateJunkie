@@ -4,13 +4,20 @@ import android.app.Application
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.houfukude.updatejunkie.R
 import com.houfukude.updatejunkie.data.AppLoadResult
 import com.houfukude.updatejunkie.data.AppRepository
 import com.houfukude.updatejunkie.data.SettingsRepository
 import com.houfukude.updatejunkie.model.AppInfo
 import com.houfukude.updatejunkie.shizuku.ShizukuManager
-import com.houfukude.updatejunkie.R
-import kotlinx.coroutines.flow.*
+import com.houfukude.updatejunkie.viewmodel.AppListViewModel.Companion.ADB_INSTALLER
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -205,7 +212,7 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                             }
                         }
                     }
-                Toast.makeText(getApplication(), getApplication<Application>().getString(R.string.load_complete), Toast.LENGTH_SHORT).show()
+                Toast.makeText(getApplication(), R.string.load_complete, Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Unknown error"
             } finally {
