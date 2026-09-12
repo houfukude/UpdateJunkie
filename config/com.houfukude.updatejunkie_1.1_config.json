@@ -2,6 +2,9 @@
   "com.houfukude.updatejunkie": {
     "updateUrl": "https:\/\/github.com\/houfukude\/UpdateJunkie\/releases"
   },
+  "com.github.metacubex.clash.meta": {
+    "updateUrl": "https:\/\/f-droid.org\/packages\/com.github.metacubex.clash.meta\/"
+  },
   "com.termux": {
     "updateUrl": "https:\/\/f-droid.org\/zh_Hans\/packages\/com.termux\/"
   },
