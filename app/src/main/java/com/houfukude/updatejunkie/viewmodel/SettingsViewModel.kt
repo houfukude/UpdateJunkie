@@ -243,16 +243,38 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 }
 
                 val version = BuildConfig.VERSION_NAME
-                // 匹配形如 ## [1.1] - 202X-XX-XX 到下一个 ## 开头之间的内容
-                val regex =
-                    Regex("##\\s*\\[$version\\].*?\\n(.*?)(\\n##|\\z)", RegexOption.DOT_MATCHES_ALL)
-                val match = regex.find(fullContent)
+
+                // 优化后的正则：
+                // 1. [^\n]* 确保只在标题行内匹配，不跨行
+                // 2. (?:\r?\n)+ 匹配一个或多个换行符
+                // 3. (.*?) 捕获正文
+                // 4. (?=\r?\n(?:##|---)|\z) 匹配到下一个标题、分割线或文件末尾
+                val sectionRegex = { v: String ->
+                    Regex(
+                        "##\\s*\\[${Regex.escape(v)}\\][^\\n]*(?:\\r?\\n)+(.*?)(?=\\r?\\n(?:##|---)|\\z)",
+                        RegexOption.DOT_MATCHES_ALL
+                    )
+                }
+
+                var match = sectionRegex(version).find(fullContent)
+
+                // 如果当前版本没内容，尝试匹配 [未发布]
+                if (match == null) {
+                    match = sectionRegex("未发布").find(fullContent)
+                }
 
                 if (match != null) {
                     val content = match.groupValues[1].trim()
-                    _changelogState.value = ChangelogState.Success(version, content)
+                        .replace(Regex("^- ", RegexOption.MULTILINE), "• ") // 简单的格式化，把 - 换成圆点
+                    if (content.isNotEmpty()) {
+                        _changelogState.value = ChangelogState.Success(version, content)
+                    } else {
+                        _changelogState.value =
+                            ChangelogState.Error("Changelog section found but content is empty")
+                    }
                 } else {
-                    _changelogState.value = ChangelogState.Error("No changelog found for v$version")
+                    _changelogState.value =
+                        ChangelogState.Error("No changelog entry found for v$version")
                 }
             } catch (e: Exception) {
                 _changelogState.value =
