@@ -423,6 +423,16 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /** 重置所有筛选条件。 */
+    fun clearAllFilters() {
+        viewModelScope.launch {
+            settingsRepository.setShowSystem(false)
+            settingsRepository.setShowDisabled(false)
+            settingsRepository.setShowConfiguredOnly(false)
+            settingsRepository.setSelectedInstallers(emptySet())
+        }
+    }
+
     /**
      * 更新搜索关键词。
      *

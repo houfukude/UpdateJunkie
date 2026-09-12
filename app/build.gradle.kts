@@ -21,8 +21,8 @@ android {
         applicationId = "com.houfukude.updatejunkie"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
     }
 
     signingConfigs {
@@ -80,7 +80,7 @@ androidComponents {
         })
 
         variant.outputs.forEach { output ->
-            val versionName = android.defaultConfig.versionName ?: "1.0"
+            val versionName = android.defaultConfig.versionName ?: "1.1"
             val applicationId = android.defaultConfig.applicationId ?: "com.houfukude.updatejunkie"
             output.outputFileName.set("${applicationId}_${versionName}_${variant.name}.apk")
         }

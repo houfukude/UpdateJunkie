@@ -85,6 +85,7 @@ fun SettingsScreen(
     val themeConfig by viewModel.themeConfig.collectAsState()
     val languageConfig by viewModel.languageConfig.collectAsState()
     val lastImportUrl by viewModel.lastImportUrl.collectAsState()
+    val changelogState by viewModel.changelogState.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.eventFlow.collect { event ->
@@ -116,6 +117,9 @@ fun SettingsScreen(
         onImportFromLan = { viewModel.importFromLanDevice(it) },
         isLanServerRunning = viewModel.isLanServerRunning.collectAsState().value,
         onToggleLanServer = { viewModel.toggleLanServer() },
+        changelogState = changelogState,
+        onFetchChangelog = { viewModel.fetchChangelog() },
+        onDismissChangelog = { viewModel.dismissChangelog() },
         onAboutClick = {
             val intent = Intent(
                 Intent.ACTION_VIEW,
@@ -168,6 +172,9 @@ fun SettingsScreenContent(
     onImportFromLan: (NsdServiceInfo) -> Unit,
     isLanServerRunning: Boolean,
     onToggleLanServer: () -> Unit,
+    changelogState: SettingsViewModel.ChangelogState,
+    onFetchChangelog: () -> Unit,
+    onDismissChangelog: () -> Unit,
     onAboutClick: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -248,7 +255,8 @@ fun SettingsScreenContent(
             ListItem(
                 headlineContent = { Text(stringResource(R.string.build_time)) },
                 supportingContent = { Text(BuildConfig.BUILD_TIME) },
-                leadingContent = { Icon(Icons.Default.Info, contentDescription = null) }
+                leadingContent = { Icon(Icons.Default.Info, contentDescription = null) },
+                modifier = Modifier.clickable { onFetchChangelog() }
             )
             ListItem(
                 headlineContent = { Text(stringResource(R.string.about)) },
@@ -555,6 +563,61 @@ fun SettingsScreenContent(
             }
         )
     }
+
+    when (val state = changelogState) {
+        is SettingsViewModel.ChangelogState.Idle -> {}
+        is SettingsViewModel.ChangelogState.Loading -> {
+            AlertDialog(
+                onDismissRequest = onDismissChangelog,
+                confirmButton = {},
+                text = {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+            )
+        }
+
+        is SettingsViewModel.ChangelogState.Success -> {
+            AlertDialog(
+                onDismissRequest = onDismissChangelog,
+                title = { Text(stringResource(R.string.version, state.version)) },
+                text = {
+                    val scrollState = rememberScrollState()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp)
+                            .verticalScroll(scrollState)
+                    ) {
+                        Text(
+                            text = state.content,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = onDismissChangelog) {
+                        Text(stringResource(android.R.string.ok))
+                    }
+                }
+            )
+        }
+
+        is SettingsViewModel.ChangelogState.Error -> {
+            AlertDialog(
+                onDismissRequest = onDismissChangelog,
+                title = { Text("Error") },
+                text = { Text(state.message) },
+                confirmButton = {
+                    TextButton(onClick = onDismissChangelog) {
+                        Text(stringResource(android.R.string.ok))
+                    }
+                }
+            )
+        }
+    }
 }
 
 
@@ -617,6 +680,9 @@ fun SettingsScreenPreview() {
             onImportFromLan = {},
             isLanServerRunning = false,
             onToggleLanServer = {},
+            changelogState = SettingsViewModel.ChangelogState.Idle,
+            onFetchChangelog = {},
+            onDismissChangelog = {},
             onAboutClick = {},
             onBack = {}
         )

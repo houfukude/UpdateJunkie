@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -135,6 +136,7 @@ fun MainScreen(
         onSettingsClick = onSettingsClick,
         onGetUpdateUrl = { viewModel.getUpdateUrl(it) },
         onSetUpdateUrl = { pkg, url -> viewModel.setUpdateUrl(pkg, url) },
+        onClearFilters = { viewModel.clearAllFilters() },
         onRequestShizukuPermission = { viewModel.requestShizukuPermission() },
         onDownloadShizuku = {
             val intent = Intent(Intent.ACTION_VIEW, "https://shizuku.rikka.app/download/".toUri())
@@ -200,6 +202,7 @@ fun MainScreenContent(
     onSettingsClick: () -> Unit,
     onGetUpdateUrl: (String) -> String?,
     onSetUpdateUrl: (String, String) -> Unit,
+    onClearFilters: () -> Unit,
     onRequestShizukuPermission: () -> Unit,
     onDownloadShizuku: () -> Unit
 ) {
@@ -276,72 +279,74 @@ fun MainScreenContent(
                                 contentDescription = stringResource(R.string.search)
                             )
                         }
-                        Box {
-                            IconButton(
-                                onClick = onToggleFilterMenu,
-                                colors = if (showFilterMenu) {
-                                    IconButtonDefaults.filledIconButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                } else {
-                                    IconButtonDefaults.iconButtonColors()
-                                }
-                            ) {
-                                Icon(
-                                    Icons.Default.FilterList,
-                                    contentDescription = stringResource(R.string.filter)
+                    }
+                    Box {
+                        IconButton(
+                            onClick = onToggleFilterMenu,
+                            colors = if (showFilterMenu) {
+                                IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
+                            } else {
+                                IconButtonDefaults.iconButtonColors()
                             }
-                            DropdownMenu(
-                                expanded = showFilterMenu,
-                                onDismissRequest = onToggleFilterMenu
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.show_system_apps)) },
-                                    trailingIcon = {
-                                        Checkbox(
-                                            checked = showSystem,
-                                            onCheckedChange = null
-                                        )
-                                    },
-                                    onClick = onToggleSystem
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.show_disabled_apps)) },
-                                    trailingIcon = {
-                                        Checkbox(
-                                            checked = showDisabled,
-                                            onCheckedChange = null
-                                        )
-                                    },
-                                    onClick = onToggleDisabled
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.show_configured_only)) },
-                                    trailingIcon = {
-                                        Checkbox(
-                                            checked = showConfiguredOnly,
-                                            onCheckedChange = null
-                                        )
-                                    },
-                                    onClick = onToggleConfiguredOnly
-                                )
-                                HorizontalDivider()
-                                availableInstallers.forEach { item ->
-                                    DropdownMenuItem(
-                                        text = { Text(item.label) },
-                                        trailingIcon = {
-                                            Checkbox(
-                                                checked = selectedInstallers.contains(item.key),
-                                                onCheckedChange = null
-                                            )
-                                        },
-                                        onClick = { onToggleInstaller(item.key) }
+                        ) {
+                            Icon(
+                                Icons.Default.FilterList,
+                                contentDescription = stringResource(R.string.filter)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showFilterMenu,
+                            onDismissRequest = onToggleFilterMenu
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.show_system_apps)) },
+                                trailingIcon = {
+                                    Checkbox(
+                                        checked = showSystem,
+                                        onCheckedChange = null
                                     )
-                                }
+                                },
+                                onClick = onToggleSystem
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.show_disabled_apps)) },
+                                trailingIcon = {
+                                    Checkbox(
+                                        checked = showDisabled,
+                                        onCheckedChange = null
+                                    )
+                                },
+                                onClick = onToggleDisabled
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.show_configured_only)) },
+                                trailingIcon = {
+                                    Checkbox(
+                                        checked = showConfiguredOnly,
+                                        onCheckedChange = null
+                                    )
+                                },
+                                onClick = onToggleConfiguredOnly
+                            )
+                            HorizontalDivider()
+                            availableInstallers.forEach { item ->
+                                DropdownMenuItem(
+                                    text = { Text(item.label) },
+                                    trailingIcon = {
+                                        Checkbox(
+                                            checked = selectedInstallers.contains(item.key),
+                                            onCheckedChange = null
+                                        )
+                                    },
+                                    onClick = { onToggleInstaller(item.key) }
+                                )
                             }
                         }
+                    }
+                    if (!isSearchActive) {
                         IconButton(onClick = onSettingsClick) {
                             Icon(
                                 Icons.Default.Settings,
@@ -414,12 +419,37 @@ fun MainScreenContent(
                 }
 
                 is AppListUiState.Success -> {
-                    AppList(
-                        apps = state.apps,
-                        headerContent = header,
-                        onGetUpdateUrl = onGetUpdateUrl,
-                        onSetUpdateUrl = onSetUpdateUrl
-                    )
+                    if (state.apps.isEmpty() && (isSearchActive || showSystem || showDisabled || showConfiguredOnly || selectedInstallers.isNotEmpty())) {
+                        Column {
+                            header()
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.no_search_results),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                if (showSystem || showDisabled || showConfiguredOnly || selectedInstallers.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Button(onClick = onClearFilters) {
+                                        Text(stringResource(R.string.clear_filters))
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        AppList(
+                            apps = state.apps,
+                            headerContent = header,
+                            onGetUpdateUrl = onGetUpdateUrl,
+                            onSetUpdateUrl = onSetUpdateUrl
+                        )
+                    }
                 }
 
                 is AppListUiState.Error -> {
@@ -528,6 +558,7 @@ fun MainScreenPreview() {
             onSettingsClick = {},
             onGetUpdateUrl = { null },
             onSetUpdateUrl = { _, _ -> },
+            onClearFilters = {},
             onRequestShizukuPermission = {},
             onDownloadShizuku = {}
         )
@@ -577,6 +608,7 @@ fun FilterMenuPreview() {
             onSettingsClick = {},
             onGetUpdateUrl = { null },
             onSetUpdateUrl = { _, _ -> },
+            onClearFilters = {},
             onRequestShizukuPermission = {},
             onDownloadShizuku = {}
         )

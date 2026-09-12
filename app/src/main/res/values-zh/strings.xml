@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">更新控</string>
     <string name="settings">设置</string>
     <string name="refresh">刷新</string>
@@ -9,7 +9,7 @@
     <string name="show_disabled_apps">显示已禁用应用</string>
     <string name="show_configured_only">只显示有配置的</string>
     <string name="unknown">未知</string>
-    <string name="scanning_apps">正在扫描应用...</string>
+    <string name="scanning_apps" tools:ignore="TypographyEllipsis">正在扫描应用...</string>
     <string name="language">语言</string>
     <string name="chinese_simplified">中文（简体）</string>
     <string name="english">英文</string>
@@ -37,7 +37,7 @@
     <string name="adb_installed">ADB 安装</string>
     <string name="self_updating_apps">自更新软件</string>
     <string name="load_complete">应用列表加载完成</string>
-    <string name="already_refreshing">正在加载中，请稍候...</string>
+    <string name="already_refreshing" tools:ignore="TypographyEllipsis">正在加载中，请稍候...</string>
     <string name="error_prefix">错误: %s</string>
     <string name="follow_system">跟随系统</string>
     <string name="source_prefix">来源: %s</string>
@@ -66,7 +66,7 @@
     <string name="lan_service_status">局域网服务: %s</string>
     <string name="lan_service_on">运行中</string>
     <string name="lan_service_off">已停止</string>
-    <string name="searching_lan">正在搜索局域网设备...</string>
+    <string name="searching_lan" tools:ignore="TypographyEllipsis">正在搜索局域网设备...</string>
     <string name="no_devices_found">未在局域网发现可用的设备</string>
     <string name="select_device">选择设备</string>
     <string name="import_dialog_title">导入配置</string>
@@ -76,4 +76,6 @@
     <string name="export_success">导出成功</string>
     <string name="url_hint">输入 URL</string>
     <string name="btn_import">导入</string>
+    <string name="no_search_results">未搜索到匹配的应用</string>
+    <string name="clear_filters">重置筛选条件</string>
 </resources>

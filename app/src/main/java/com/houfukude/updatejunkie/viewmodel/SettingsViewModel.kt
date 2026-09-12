@@ -14,10 +14,12 @@ import com.houfukude.updatejunkie.data.ThemeConfig
 import com.houfukude.updatejunkie.utils.LanManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -48,6 +50,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     /** 局域网服务端状态。 */
     val isLanServerRunning = lanManager.isServerRunning
+
+    private val _changelogState = MutableStateFlow<ChangelogState>(ChangelogState.Idle)
+    val changelogState: StateFlow<ChangelogState> = _changelogState.asStateFlow()
+
+    sealed class ChangelogState {
+        object Idle : ChangelogState()
+        object Loading : ChangelogState()
+        data class Success(val version: String, val content: String) : ChangelogState()
+        data class Error(val message: String) : ChangelogState()
+    }
 
     sealed class SettingsEvent {
         data class ShowToast(val messageRes: Int) : SettingsEvent()
@@ -215,6 +227,42 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun getConfigJson(): String {
         return appConfigRepository.getAllConfigs().toString(2)
+    }
+
+    /**
+     * 从 GitHub 获取当前版本的更新日志。
+     */
+    fun fetchChangelog() {
+        viewModelScope.launch {
+            _changelogState.value = ChangelogState.Loading
+            try {
+                val url =
+                    "https://raw.githubusercontent.com/houfukude/UpdateJunkie/master/CHANGELOG.md"
+                val fullContent = withContext(Dispatchers.IO) {
+                    URL(url).readText()
+                }
+
+                val version = BuildConfig.VERSION_NAME
+                // 匹配形如 ## [1.1] - 202X-XX-XX 到下一个 ## 开头之间的内容
+                val regex =
+                    Regex("##\\s*\\[$version\\].*?\\n(.*?)(\\n##|\\z)", RegexOption.DOT_MATCHES_ALL)
+                val match = regex.find(fullContent)
+
+                if (match != null) {
+                    val content = match.groupValues[1].trim()
+                    _changelogState.value = ChangelogState.Success(version, content)
+                } else {
+                    _changelogState.value = ChangelogState.Error("No changelog found for v$version")
+                }
+            } catch (e: Exception) {
+                _changelogState.value =
+                    ChangelogState.Error(e.localizedMessage ?: "Failed to fetch changelog")
+            }
+        }
+    }
+
+    fun dismissChangelog() {
+        _changelogState.value = ChangelogState.Idle
     }
 
     override fun onCleared() {
