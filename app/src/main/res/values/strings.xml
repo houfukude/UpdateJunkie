@@ -7,6 +7,7 @@
     <string name="filter">Filter</string>
     <string name="show_system_apps">Show system apps</string>
     <string name="show_disabled_apps">Show disabled apps</string>
+    <string name="show_configured_only">Show configured only</string>
     <string name="unknown">Unknown</string>
     <string name="scanning_apps">Scanning apps...</string>
     <string name="language">Language</string>

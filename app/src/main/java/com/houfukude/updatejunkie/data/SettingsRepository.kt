@@ -34,11 +34,17 @@ class SettingsRepository(private val context: Context) {
         val SHOW_SYSTEM = booleanPreferencesKey("show_system")
         /** 是否在列表中显示已禁用的应用 */
         val SHOW_DISABLED = booleanPreferencesKey("show_disabled")
+
+        /** 是否仅显示已配置更新地址的应用 */
+        val SHOW_CONFIGURED_ONLY = booleanPreferencesKey("show_configured_only")
         /** 已勾选的安装来源标签集合 */
         val SELECTED_INSTALLERS = stringSetPreferencesKey("selected_installers")
 
         /** 配置的更新地址 (URL) */
         val UPDATE_URL = stringPreferencesKey("update_url")
+
+        /** 最后一次导入配置的 URL */
+        val LAST_IMPORT_URL = stringPreferencesKey("last_import_url")
     }
 
     private companion object {
@@ -83,6 +89,10 @@ class SettingsRepository(private val context: Context) {
     val showDisabled: Flow<Boolean> = context.dataStore.data
         .map { preferences -> preferences[PreferencesKeys.SHOW_DISABLED] ?: false }
 
+    /** 是否仅显示已配置更新地址的应用，默认 false。 */
+    val showConfiguredOnly: Flow<Boolean> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.SHOW_CONFIGURED_ONLY] ?: false }
+
     /**
      * 已勾选的安装来源标签集合，元素可为 null（表示未知来源）。
      * 读取时会将哨兵值 [NULL_LABEL_KEY] 还原为 null。
@@ -98,6 +108,12 @@ class SettingsRepository(private val context: Context) {
      */
     val updateUrl: Flow<String> = context.dataStore.data
         .map { preferences -> preferences[PreferencesKeys.UPDATE_URL] ?: "" }
+
+    /**
+     * 最后一次导入配置的 URL 流。
+     */
+    val lastImportUrl: Flow<String?> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.LAST_IMPORT_URL] }
 
     /**
      * 持久化主题配置。
@@ -140,6 +156,15 @@ class SettingsRepository(private val context: Context) {
     }
 
     /**
+     * 持久化"是否仅显示已配置更新地址的应用"。
+     *
+     * @param show true 表示仅显示已配置应用
+     */
+    suspend fun setShowConfiguredOnly(show: Boolean) {
+        context.dataStore.edit { it[PreferencesKeys.SHOW_CONFIGURED_ONLY] = show }
+    }
+
+    /**
      * 持久化已勾选的安装来源标签集合。
      *
      * @param installers 安装来源标签集合，其中的 null 会被转换为哨兵值 [NULL_LABEL_KEY] 后存储
@@ -158,6 +183,17 @@ class SettingsRepository(private val context: Context) {
     suspend fun saveUpdateUrl(url: String) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.UPDATE_URL] = url
+        }
+    }
+
+    /**
+     * 持久化最后一次导入配置的 URL。
+     *
+     * @param url 要保存的 URL
+     */
+    suspend fun setLastImportUrl(url: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.LAST_IMPORT_URL] = url
         }
     }
 }

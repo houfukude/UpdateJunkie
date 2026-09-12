@@ -5,6 +5,7 @@ import android.net.Uri
 import android.net.nsd.NsdServiceInfo
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.houfukude.updatejunkie.BuildConfig
 import com.houfukude.updatejunkie.R
 import com.houfukude.updatejunkie.data.AppConfigRepository
 import com.houfukude.updatejunkie.data.LanguageConfig
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -73,6 +75,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = LanguageConfig.FOLLOW_SYSTEM
+        )
+
+    /**
+     * 最后一次使用的导入 URL。如果从未导入过，则返回默认的 GitHub Release URL。
+     */
+    val lastImportUrl: StateFlow<String> = repository.lastImportUrl
+        .map {
+            it
+                ?: "https://github.com/houfukude/UpdateJunkie/releases/download/v${BuildConfig.VERSION_NAME}/com.houfukude.updatejunkie_${BuildConfig.VERSION_NAME}_config.json"
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "https://github.com/houfukude/UpdateJunkie/releases/download/v${BuildConfig.VERSION_NAME}/com.houfukude.updatejunkie_${BuildConfig.VERSION_NAME}_config.json"
         )
 
     /**
@@ -142,6 +158,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun importConfigFromUrl(urlString: String) {
         viewModelScope.launch {
             try {
+                // 持久化当前使用的 URL
+                repository.setLastImportUrl(urlString)
+                
                 val json = withContext(Dispatchers.IO) {
                     URL(urlString).readText()
                 }

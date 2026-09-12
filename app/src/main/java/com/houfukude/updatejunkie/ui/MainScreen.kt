@@ -100,6 +100,7 @@ fun MainScreen(
     val selectedInstallers by viewModel.selectedInstallers.collectAsState()
     val showSystem by viewModel.showSystem.collectAsState()
     val showDisabled by viewModel.showDisabled.collectAsState()
+    val showConfiguredOnly by viewModel.showConfiguredOnly.collectAsState()
 
     var showFilterMenu by remember { mutableStateOf(false) }
     var isSearchActive by remember { mutableStateOf(false) }
@@ -123,11 +124,13 @@ fun MainScreen(
         selectedInstallers = selectedInstallers,
         showSystem = showSystem,
         showDisabled = showDisabled,
+        showConfiguredOnly = showConfiguredOnly,
         showFilterMenu = showFilterMenu,
         onToggleFilterMenu = { showFilterMenu = !showFilterMenu },
         onToggleInstaller = { viewModel.toggleInstallerFilter(it) },
         onToggleSystem = { viewModel.toggleSystemFilter() },
         onToggleDisabled = { viewModel.toggleDisabledFilter() },
+        onToggleConfiguredOnly = { viewModel.toggleConfiguredOnlyFilter() },
         onRefresh = { viewModel.loadApps() },
         onSettingsClick = onSettingsClick,
         onGetUpdateUrl = { viewModel.getUpdateUrl(it) },
@@ -186,11 +189,13 @@ fun MainScreenContent(
     selectedInstallers: Set<String?>,
     showSystem: Boolean,
     showDisabled: Boolean,
+    showConfiguredOnly: Boolean,
     showFilterMenu: Boolean,
     onToggleFilterMenu: () -> Unit,
     onToggleInstaller: (String?) -> Unit,
     onToggleSystem: () -> Unit,
     onToggleDisabled: () -> Unit,
+    onToggleConfiguredOnly: () -> Unit,
     onRefresh: () -> Unit,
     onSettingsClick: () -> Unit,
     onGetUpdateUrl: (String) -> String?,
@@ -311,6 +316,16 @@ fun MainScreenContent(
                                         )
                                     },
                                     onClick = onToggleDisabled
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.show_configured_only)) },
+                                    trailingIcon = {
+                                        Checkbox(
+                                            checked = showConfiguredOnly,
+                                            onCheckedChange = null
+                                        )
+                                    },
+                                    onClick = onToggleConfiguredOnly
                                 )
                                 HorizontalDivider()
                                 availableInstallers.forEach { item ->
@@ -502,11 +517,13 @@ fun MainScreenPreview() {
             selectedInstallers = emptySet(),
             showSystem = true,
             showDisabled = true,
+            showConfiguredOnly = false,
             showFilterMenu = false,
             onToggleFilterMenu = {},
             onToggleInstaller = {},
             onToggleSystem = {},
             onToggleDisabled = {},
+            onToggleConfiguredOnly = {},
             onRefresh = {},
             onSettingsClick = {},
             onGetUpdateUrl = { null },
@@ -549,11 +566,13 @@ fun FilterMenuPreview() {
             selectedInstallers = setOf("Coolapk"),
             showSystem = true,
             showDisabled = false,
+            showConfiguredOnly = false,
             showFilterMenu = true,
             onToggleFilterMenu = {},
             onToggleInstaller = {},
             onToggleSystem = {},
             onToggleDisabled = {},
+            onToggleConfiguredOnly = {},
             onRefresh = {},
             onSettingsClick = {},
             onGetUpdateUrl = { null },

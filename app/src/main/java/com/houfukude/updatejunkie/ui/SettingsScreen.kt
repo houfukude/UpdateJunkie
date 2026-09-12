@@ -84,6 +84,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val themeConfig by viewModel.themeConfig.collectAsState()
     val languageConfig by viewModel.languageConfig.collectAsState()
+    val lastImportUrl by viewModel.lastImportUrl.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.eventFlow.collect { event ->
@@ -104,6 +105,7 @@ fun SettingsScreen(
         onThemeConfigChange = { viewModel.setThemeConfig(it) },
         languageConfig = languageConfig,
         onLanguageConfigChange = { viewModel.setLanguageConfig(it) },
+        lastImportUrl = lastImportUrl,
         onImportFile = { viewModel.importConfigFromFile(it) },
         onImportUrl = { viewModel.importConfigFromUrl(it) },
         onExport = { viewModel.exportConfig(it) },
@@ -155,6 +157,7 @@ fun SettingsScreenContent(
     onThemeConfigChange: (ThemeConfig) -> Unit,
     languageConfig: LanguageConfig,
     onLanguageConfigChange: (LanguageConfig) -> Unit,
+    lastImportUrl: String,
     onImportFile: (Uri) -> Unit,
     onImportUrl: (String) -> Unit,
     onExport: (Uri) -> Unit,
@@ -403,7 +406,7 @@ fun SettingsScreenContent(
     }
 
     if (showUrlImportDialog) {
-        var url by remember { mutableStateOf("") }
+        var url by remember { mutableStateOf(lastImportUrl) }
         AlertDialog(
             onDismissRequest = { showUrlImportDialog = false },
             title = { Text(stringResource(R.string.import_via_url)) },
@@ -603,6 +606,7 @@ fun SettingsScreenPreview() {
             onThemeConfigChange = {},
             languageConfig = LanguageConfig.FOLLOW_SYSTEM,
             onLanguageConfigChange = {},
+            lastImportUrl = "https://example.com/config.json",
             onImportFile = {},
             onImportUrl = {},
             onExport = {},

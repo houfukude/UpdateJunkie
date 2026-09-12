@@ -95,18 +95,24 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     val showDisabled: StateFlow<Boolean> = settingsRepository.showDisabled
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    /** 是否仅显示已配置更新地址的应用。 */
+    val showConfiguredOnly: StateFlow<Boolean> = settingsRepository.showConfiguredOnly
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     /**
      * 参与列表过滤的一组条件参数。
      *
      * @property selectedInstallers 已勾选的安装来源标签；为空表示不过滤
      * @property showSystem 是否显示系统应用
      * @property showDisabled 是否显示已禁用的应用
+     * @property showConfiguredOnly 是否仅显示已配置更新地址的应用
      * @property searchQuery 搜索关键词
      */
     data class FilterParams(
         val selectedInstallers: Set<String?>,
         val showSystem: Boolean,
         val showDisabled: Boolean,
+        val showConfiguredOnly: Boolean,
         val searchQuery: String
     )
 
@@ -115,9 +121,10 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
         selectedInstallers,
         showSystem,
         showDisabled,
+        showConfiguredOnly,
         searchQuery
-    ) { selected, showSystem, showDisabled, query ->
-        FilterParams(selected, showSystem, showDisabled, query)
+    ) { selected, showSystem, showDisabled, showConfiguredOnly, query ->
+        FilterParams(selected, showSystem, showDisabled, showConfiguredOnly, query)
     }
 
     /**
@@ -205,6 +212,8 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                 val filteredApps = allApps.filter { appInfo ->
                     val matchSystem = filters.showSystem || !appInfo.isSystemApp
                     val matchDisabled = filters.showDisabled || appInfo.isEnabled
+                    val matchConfigured =
+                        if (filters.showConfiguredOnly) appInfo.hasUpdateUrl else true
 
                     val appSourceKey = when {
                         appInfo.isSystemApp -> MarketUtils.SYSTEM_APP_INSTALLER
@@ -226,7 +235,7 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                                     appInfo.packageName.contains(keyword, ignoreCase = true)
                         }
                     }
-                    matchSystem && matchDisabled && matchInstaller && matchQuery
+                    matchSystem && matchDisabled && matchConfigured && matchInstaller && matchQuery
                 }.map { appInfo ->
                     // 优化展示标签：如果安装来源应用本身已安装，则使用其友好名称
                     val key = when {
@@ -404,6 +413,13 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     fun toggleDisabledFilter() {
         viewModelScope.launch {
             settingsRepository.setShowDisabled(!showDisabled.value)
+        }
+    }
+
+    /** 反转并持久化"是否仅显示已配置更新地址的应用"的筛选开关。 */
+    fun toggleConfiguredOnlyFilter() {
+        viewModelScope.launch {
+            settingsRepository.setShowConfiguredOnly(!showConfiguredOnly.value)
         }
     }
 
