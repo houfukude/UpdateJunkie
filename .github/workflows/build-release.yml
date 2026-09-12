@@ -28,12 +28,44 @@ jobs:
       - name: Extract Version and Package ID
         id: get_info
         run: |
-          VERSION=$(grep "versionName =" app/build.gradle.kts | sed 's/.*= "//;s/".*//')
-          APP_ID=$(grep "applicationId =" app/build.gradle.kts | sed 's/.*= "//;s/".*//')
+          VERSION=$(grep -m1 -E '^[[:space:]]*versionName[[:space:]]*=[[:space:]]*"' app/build.gradle.kts | sed 's/.*=[[:space:]]*"//;s/".*//')
+          VERSION_CODE=$(grep -m1 -E '^[[:space:]]*versionCode[[:space:]]*=' app/build.gradle.kts | sed 's/.*=[[:space:]]*//' | tr -d '[:space:]')
+          APP_ID=$(grep -m1 -E '^[[:space:]]*applicationId[[:space:]]*=[[:space:]]*"' app/build.gradle.kts | sed 's/.*=[[:space:]]*"//;s/".*//')
+          if [ -z "$VERSION" ] || [ -z "$VERSION_CODE" ] || [ -z "$APP_ID" ]; then
+            echo "::error::Failed to extract versionName / versionCode / applicationId from app/build.gradle.kts"
+            exit 1
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "package_id=$APP_ID" >> $GITHUB_OUTPUT
-          echo "Detected version: $VERSION"
+          echo "Detected version: $VERSION (versionCode: $VERSION_CODE)"
           echo "Detected package ID: $APP_ID"
+
+      - name: Compose Release Metadata
+        id: release_meta
+        run: |
+          VERSION="${{ steps.get_info.outputs.version }}"
+          PACKAGE_ID="${{ steps.get_info.outputs.package_id }}"
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          COMMIT_SUBJECT=$(git log -1 --pretty=%s)
+          BUILD_TIME=$(TZ="Asia/Shanghai" date '+%Y-%m-%d %H:%M:%S (UTC+8)')
+          {
+            echo "## 构建信息"
+            echo ""
+            echo "- 版本: ${VERSION} (versionCode: ${{ steps.get_info.outputs.version_code }})"
+            echo "- 构建号: #${{ github.run_number }}"
+            echo "- 提交: ${SHORT_SHA} - ${COMMIT_SUBJECT}"
+            echo "- 触发: ${{ github.actor }} @ ${{ github.ref_name }}"
+            echo "- 构建时间: ${BUILD_TIME}"
+            echo "- 运行详情: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "- APK: \`${PACKAGE_ID}_${VERSION}_release.apk\`"
+            echo "- 配置文件: \`${PACKAGE_ID}_${VERSION}_config.json\`"
+            echo ""
+            echo "---"
+          } > release_body.md
+          echo "::group::release_body.md"
+          cat release_body.md
+          echo "::endgroup::"
 
       - name: Decode Keystore
         id: decode_keystore
@@ -55,6 +87,9 @@ jobs:
         with:
           tag_name: v${{ steps.get_info.outputs.version }}
           name: Release v${{ steps.get_info.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          body_path: release_body.md
+          generate_release_notes: true
           draft: false
           prerelease: false
           files: |

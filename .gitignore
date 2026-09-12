@@ -33,6 +33,9 @@ captures/
 .DS_Store
 Thumbs.db
 
+# AI local memory
 .artifacts/
+.codebuddy/
+
 .env
 test/

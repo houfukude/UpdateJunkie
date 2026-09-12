@@ -1,7 +1,25 @@
 # 更新控 (Update Junkie)
 
+![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-%E2%9C%93-4285F4?logo=jetpackcompose&logoColor=white)
+![Shizuku](https://img.shields.io/badge/Shizuku-%E2%9C%93-3DDC84)
+![Material 3](https://img.shields.io/badge/Material_3-%E2%9C%93-757575)
+[![构建状态](https://img.shields.io/github/actions/workflow/status/houfukude/UpdateJunkie/build-release.yml?branch=release&label=%E6%9E%84%E5%BB%BA%E7%8A%B6%E6%80%81)](https://github.com/houfukude/UpdateJunkie/actions/workflows/build-release.yml)
+[![发布日](https://img.shields.io/github/release-date-pre/houfukude/UpdateJunkie?label=%E5%8F%91%E5%B8%83%E6%97%A5)](https://github.com/houfukude/UpdateJunkie/releases)
+[![版本](https://img.shields.io/github/v/release/houfukude/UpdateJunkie?include_prereleases&label=%E7%89%88%E6%9C%AC)](https://github.com/houfukude/UpdateJunkie/releases)
+
 **更新控** 是一款专注于管理和追踪 Android 应用安装来源及更新地址的实用工具。通过集成的 Shizuku
 权限管理，它可以精确还原每个应用的“真实”安装渠道，并允许用户自定义和共享应用更新配置。
+
+## 📱 应用截图
+
+<table>
+  <tr>
+    <td align="center" width="25%"><img src="https://raw.githubusercontent.com/houfukude/UpdateJunkie/master/screenshot/1.png" width="100%" alt="应用列表：Shizuku 已连接，逐条展示安装来源与版本" /></td>
+    <td align="center" width="25%"><img src="https://raw.githubusercontent.com/houfukude/UpdateJunkie/master/screenshot/2.png" width="100%" alt="应用列表：持续还原系统应用与自更新应用的真实来源" /></td>
+    <td align="center" width="25%"><img src="https://raw.githubusercontent.com/houfukude/UpdateJunkie/master/screenshot/3.png" width="100%" alt="导入配置：支持 URL、文件与局域网导入" /></td>
+    <td align="center" width="25%"><img src="https://raw.githubusercontent.com/houfukude/UpdateJunkie/master/screenshot/4.png" width="100%" alt="导出配置：支持文件导出与局域网服务" /></td>
+  </tr>
+</table>
 
 ## 🚀 核心功能
 
@@ -46,6 +64,8 @@
 - 自动提取版本号并创建 GitHub Release。
 - 自动上传已签名的 APK 产物。
 - 自动同步上传 `config` 目录下对应版本的配置文件。
+- 自动生成 Release 说明：正文先列出本次构建的版本号、构建号、提交、构建时间与产物名称，其后拼接 GitHub
+  依据提交记录生成的变更清单。
 
 ### 2. 本地构建
 
@@ -71,6 +91,8 @@
 待实现的功能规划：
 
 - [ ] **筛选功能**：在筛选菜单最上方添加一个「有配置的」筛选项，仅显示已配置更新 URL 的应用。
+- [ ] **筛选优化**：将「自更新软件」合并为筛选菜单中的单独一项——当应用的安装来源为其自身包名（应用内自带
+  下载 / 安装逻辑）时统一归入该项，不再逐个以包名出现在筛选菜单中（可参考现有 ADB 安装的归类方式）。
 - [ ] 更多功能待补充……
 
 ---

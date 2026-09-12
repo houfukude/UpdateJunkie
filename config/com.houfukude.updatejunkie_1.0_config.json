@@ -1,14 +1,29 @@
 {
+  "com.houfukude.updatejunkie": {
+    "updateUrl": "https:\/\/github.com\/houfukude\/UpdateJunkie\/releases"
+  },
   "com.termux": {
     "updateUrl": "https:\/\/f-droid.org\/zh_Hans\/packages\/com.termux\/"
   },
   "com.aistra.hail": {
     "updateUrl": "https:\/\/f-droid.org\/packages\/com.aistra.hail\/"
   },
+  "net.typeblog.shelter": {
+    "updateUrl": "https:\/\/f-droid.org\/packages\/net.typeblog.shelter\/"
+  },
+  "com.kitsumed.shizucallrecorder": {
+    "updateUrl": "https:\/\/f-droid.org\/packages\/com.kitsumed.shizucallrecorder\/"
+  },
+  "xyz.siwane.shizucorefetch": {
+    "updateUrl": "https:\/\/github.com\/elhizazi1\/ShizuCoreFetch\/releases"
+  },
+  "moe.ouom.neriplayer": {
+    "updateUrl": "https:\/\/github.com\/cwuom\/NeriPlayer\/releases"
+  },
   "com.feiniu.music": {
     "updateUrl": "https:\/\/github.com\/kuilei0926\/FeiNiuMusic\/releases"
   },
-  "com.houfukude.updatejunkie": {
-    "updateUrl": "https:\/\/github.com\/houfukude\/UpdateJunkie\/releases"
+  "com.tencent.workbuddy.app": {
+    "updateUrl": "https:\/\/www.workbuddy.cn\/"
   }
 }
