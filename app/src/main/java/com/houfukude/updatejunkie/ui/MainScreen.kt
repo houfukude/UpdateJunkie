@@ -182,7 +182,7 @@ fun MainScreenContent(
     onSearchQueryChange: (String) -> Unit,
     isSearchActive: Boolean,
     onToggleSearch: () -> Unit,
-    availableInstallers: List<String?>,
+    availableInstallers: List<AppListViewModel.InstallerFilterItem>,
     selectedInstallers: Set<String?>,
     showSystem: Boolean,
     showDisabled: Boolean,
@@ -313,23 +313,16 @@ fun MainScreenContent(
                                     onClick = onToggleDisabled
                                 )
                                 HorizontalDivider()
-                                availableInstallers.forEach { label ->
+                                availableInstallers.forEach { item ->
                                     DropdownMenuItem(
-                                        text = {
-                                            val displayLabel = when (label) {
-                                                null -> stringResource(R.string.unknown)
-                                                AppListViewModel.ADB_INSTALLER -> stringResource(R.string.adb_installed)
-                                                else -> label
-                                            }
-                                            Text(displayLabel)
-                                        },
+                                        text = { Text(item.label) },
                                         trailingIcon = {
                                             Checkbox(
-                                                checked = selectedInstallers.contains(label),
+                                                checked = selectedInstallers.contains(item.key),
                                                 onCheckedChange = null
                                             )
                                         },
-                                        onClick = { onToggleInstaller(label) }
+                                        onClick = { onToggleInstaller(item.key) }
                                     )
                                 }
                             }
@@ -502,7 +495,10 @@ fun MainScreenPreview() {
             onSearchQueryChange = {},
             isSearchActive = false,
             onToggleSearch = {},
-            availableInstallers = listOf("Google Play Store", "Coolapk"),
+            availableInstallers = listOf(
+                AppListViewModel.InstallerFilterItem("com.android.vending", "Google Play Store"),
+                AppListViewModel.InstallerFilterItem("com.coolapk.market", "Coolapk")
+            ),
             selectedInstallers = emptySet(),
             showSystem = true,
             showDisabled = true,
@@ -545,7 +541,11 @@ fun FilterMenuPreview() {
             onSearchQueryChange = {},
             isSearchActive = false,
             onToggleSearch = {},
-            availableInstallers = listOf("Google Play Store", "Coolapk", "ADB 安装"),
+            availableInstallers = listOf(
+                AppListViewModel.InstallerFilterItem("com.android.vending", "Google Play Store"),
+                AppListViewModel.InstallerFilterItem("com.coolapk.market", "Coolapk"),
+                AppListViewModel.InstallerFilterItem(AppListViewModel.ADB_INSTALLER, "ADB 安装")
+            ),
             selectedInstallers = setOf("Coolapk"),
             showSystem = true,
             showDisabled = false,

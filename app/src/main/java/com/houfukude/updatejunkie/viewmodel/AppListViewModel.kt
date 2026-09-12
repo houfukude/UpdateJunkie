@@ -11,7 +11,7 @@ import com.houfukude.updatejunkie.data.AppRepository
 import com.houfukude.updatejunkie.data.SettingsRepository
 import com.houfukude.updatejunkie.model.AppInfo
 import com.houfukude.updatejunkie.shizuku.ShizukuManager
-import com.houfukude.updatejunkie.viewmodel.AppListViewModel.Companion.ADB_INSTALLER
+import com.houfukude.updatejunkie.utils.MarketUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -41,7 +41,21 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     companion object {
         /** ADB / 命令行安装的应用在筛选器中使用的统一标签（内部标识）。 */
         const val ADB_INSTALLER = "__adb_installed__"
+
+        /** 自更新应用（安装来源为自身包名）的统一标签。 */
+        const val SELF_UPDATER = "__self_updating__"
     }
+
+    /**
+     * 安装来源筛选条目模型。
+     *
+     * @property key 内部标识（包名或内部常量）
+     * @property label 展示给用户的友好名称
+     */
+    data class InstallerFilterItem(
+        val key: String?,
+        val label: String
+    )
 
     /** 全量应用列表（未过滤），按名称升序维护。 */
     private val _allApps = MutableStateFlow<List<AppInfo>>(emptyList())
@@ -71,15 +85,15 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
 
     /** 已勾选的安装来源标签集合，空集合表示不按来源过滤。 */
     val selectedInstallers: StateFlow<Set<String?>> = settingsRepository.selectedInstallers
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
     /** 是否显示系统应用。 */
     val showSystem: StateFlow<Boolean> = settingsRepository.showSystem
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     /** 是否显示已禁用的应用。 */
     val showDisabled: StateFlow<Boolean> = settingsRepository.showDisabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     /**
      * 参与列表过滤的一组条件参数。
@@ -107,14 +121,59 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /**
-     * 当前所有应用中出现过的安装来源标签，去重并按名称升序排列。
-     * ADB 安装的应用统一归类到 [ADB_INSTALLER]。
+     * 当前所有应用中出现过的安装来源，按优先级与名称排序。
+     * 优先从已扫描的应用中提取安装来源的友好名称（Label）。
      */
-    val availableInstallers: StateFlow<List<String?>> = _allApps.map { apps ->
-        apps.map { app ->
-            if (app.isAdbInstalled) ADB_INSTALLER
-            else app.installerLabel
-        }.distinct().sortedBy { it ?: "" }
+    val availableInstallers: StateFlow<List<InstallerFilterItem>> = _allApps.map { apps ->
+        val pkgToLabel = apps.associate { it.packageName to it.label }
+        val app = getApplication<Application>()
+
+        // 提取所有出现的来源 Key 并建立对应的友好 Label
+        val keyToLabel = apps.map { appInfo ->
+            when {
+                appInfo.isSystemApp -> MarketUtils.SYSTEM_APP_INSTALLER
+                appInfo.isAdbInstalled -> ADB_INSTALLER
+                appInfo.installerPackageName == appInfo.packageName -> SELF_UPDATER
+                else -> appInfo.installerPackageName
+            }
+        }.distinct().associateWith { key ->
+            when (key) {
+                MarketUtils.SYSTEM_APP_INSTALLER -> app.getString(R.string.system_app)
+                ADB_INSTALLER -> app.getString(R.string.adb_installed)
+                SELF_UPDATER -> app.getString(R.string.self_updating_apps)
+                else -> {
+                    // 1. 优先使用扫描到的安装来源 App 本身的名称
+                    // 2. 其次使用 MarketUtils 定义的名称
+                    // 3. 最后回退到包名
+                    pkgToLabel[key] ?: MarketUtils.getMarketLabel(app, key)
+                }
+            }
+        }
+
+        keyToLabel.keys.toList().sortedWith { a, b ->
+            val pA = when (a) {
+                MarketUtils.SYSTEM_APP_INSTALLER -> 0
+                ADB_INSTALLER -> 1
+                SELF_UPDATER -> 2
+                else -> 3
+            }
+            val pB = when (b) {
+                MarketUtils.SYSTEM_APP_INSTALLER -> 0
+                ADB_INSTALLER -> 1
+                SELF_UPDATER -> 2
+                else -> 3
+            }
+
+            if (pA != pB) {
+                pA.compareTo(pB)
+            } else {
+                val labelA = keyToLabel[a] ?: ""
+                val labelB = keyToLabel[b] ?: ""
+                labelA.compareTo(labelB, ignoreCase = true)
+            }
+        }.map { key ->
+            InstallerFilterItem(key, keyToLabel[key] ?: "")
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /**
@@ -130,26 +189,63 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
             loading -> AppListUiState.Loading
             error != null -> AppListUiState.Error(error)
             else -> {
-                val filteredApps = allApps.filter { app ->
-                    val matchSystem = if (filters.showSystem) true else !app.isSystemApp
-                    val matchDisabled = if (filters.showDisabled) true else app.isEnabled
-                    val matchInstaller = if (filters.selectedInstallers.isEmpty()) {
-                        true
-                    } else {
-                        val appSource = if (app.isAdbInstalled) ADB_INSTALLER else app.installerLabel
-                        filters.selectedInstallers.contains(appSource)
+                val app = getApplication<Application>()
+                val pkgToLabel = allApps.associate { it.packageName to it.label }
+
+                // 计算当前所有应用实际持有的安装来源 Key，用于校验筛选条件的有效性
+                val currentAvailableKeys = allApps.map { appInfo ->
+                    when {
+                        appInfo.isSystemApp -> MarketUtils.SYSTEM_APP_INSTALLER
+                        appInfo.isAdbInstalled -> ADB_INSTALLER
+                        appInfo.installerPackageName == appInfo.packageName -> SELF_UPDATER
+                        else -> appInfo.installerPackageName
                     }
+                }.distinct().toSet()
+
+                val filteredApps = allApps.filter { appInfo ->
+                    val matchSystem = filters.showSystem || !appInfo.isSystemApp
+                    val matchDisabled = filters.showDisabled || appInfo.isEnabled
+
+                    val appSourceKey = when {
+                        appInfo.isSystemApp -> MarketUtils.SYSTEM_APP_INSTALLER
+                        appInfo.isAdbInstalled -> ADB_INSTALLER
+                        appInfo.installerPackageName == appInfo.packageName -> SELF_UPDATER
+                        else -> appInfo.installerPackageName
+                    }
+
+                    val validSelected = filters.selectedInstallers.intersect(currentAvailableKeys)
+                    val matchInstaller =
+                        validSelected.isEmpty() || validSelected.contains(appSourceKey)
+                    
                     val matchQuery = if (filters.searchQuery.isBlank()) {
                         true
                     } else {
-                        // 支持多关键词混合搜索（空格分隔），且同时匹配名称和包名
                         val keywords = filters.searchQuery.trim().split(Regex("\\s+"))
                         keywords.all { keyword ->
-                            app.label.contains(keyword, ignoreCase = true) ||
-                                    app.packageName.contains(keyword, ignoreCase = true)
+                            appInfo.label.contains(keyword, ignoreCase = true) ||
+                                    appInfo.packageName.contains(keyword, ignoreCase = true)
                         }
                     }
                     matchSystem && matchDisabled && matchInstaller && matchQuery
+                }.map { appInfo ->
+                    // 优化展示标签：如果安装来源应用本身已安装，则使用其友好名称
+                    val key = when {
+                        appInfo.isSystemApp -> MarketUtils.SYSTEM_APP_INSTALLER
+                        appInfo.isAdbInstalled -> ADB_INSTALLER
+                        appInfo.installerPackageName == appInfo.packageName -> SELF_UPDATER
+                        else -> appInfo.installerPackageName
+                    }
+                    val optimizedLabel = when (key) {
+                        MarketUtils.SYSTEM_APP_INSTALLER -> app.getString(R.string.system_app)
+                        ADB_INSTALLER -> app.getString(R.string.adb_installed)
+                        SELF_UPDATER -> app.getString(R.string.self_updating_apps)
+                        else -> pkgToLabel[key] ?: appInfo.installerLabel
+                    }
+                    if (appInfo.installerLabel != optimizedLabel) {
+                        appInfo.copy(installerLabel = optimizedLabel)
+                    } else {
+                        appInfo
+                    }
                 }
                 AppListUiState.Success(filteredApps)
             }
@@ -223,6 +319,11 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
      * 全部加载完成后弹出 Toast 提示，异常时写入 [_error]。
      */
     fun loadApps() {
+        if (_isRefreshing.value) {
+            val app = getApplication<Application>()
+            Toast.makeText(app, R.string.already_refreshing, Toast.LENGTH_SHORT).show()
+            return
+        }
         viewModelScope.launch {
             _isLoading.value = true
             _isRefreshing.value = true
@@ -356,9 +457,9 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
 /**
  * 应用列表页的 UI 状态。
  *
- * @see AppListUiState.Loading 首次加载中，展示整屏进度条
- * @see AppListUiState.Success 加载成功，携带过滤后的应用列表
- * @see AppListUiState.Error 加载失败，携带错误信息
+ * @see Loading 首次加载中，展示整屏进度条
+ * @see Success 加载成功，携带过滤后的应用列表
+ * @see Error 加载失败，携带错误信息
  */
 sealed class AppListUiState {
     /** 首次加载中，列表内容为空。 */

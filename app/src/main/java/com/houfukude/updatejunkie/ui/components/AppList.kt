@@ -42,9 +42,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -112,6 +114,7 @@ fun AppItem(
     initialShowMenu: Boolean = false
 ) {
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     var showMenu by remember { mutableStateOf(initialShowMenu) }
     var showDialog by remember { mutableStateOf(false) }
 
@@ -232,6 +235,18 @@ fun AppItem(
                             }
                         )
                         DropdownMenuItem(
+                            text = { Text(stringResource(R.string.menu_copy_package_name)) },
+                            onClick = {
+                                showMenu = false
+                                clipboardManager.setText(AnnotatedString(app.packageName))
+                                Toast.makeText(
+                                    context,
+                                    R.string.package_name_copied,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        )
+                        DropdownMenuItem(
                             text = { Text(stringResource(R.string.menu_configure_update_url)) },
                             onClick = {
                                 showMenu = false
@@ -272,9 +287,14 @@ fun AppItem(
         supportingContent = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val sourceText =
-                        if (app.isAdbInstalled) stringResource(R.string.adb_installed)
-                        else stringResource(R.string.source_prefix, app.installerLabel ?: stringResource(R.string.unknown))
+                    val sourceText = when {
+                        app.isAdbInstalled -> stringResource(R.string.adb_installed)
+                        app.installerPackageName == app.packageName -> stringResource(R.string.self_updating_apps)
+                        else -> stringResource(
+                            R.string.source_prefix,
+                            app.installerLabel ?: stringResource(R.string.unknown)
+                        )
+                    }
                     Text(
                         sourceText,
                         fontSize = 12.sp,

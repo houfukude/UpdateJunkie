@@ -34,7 +34,9 @@
     <string name="request_authorization">Authorization</string>
     <string name="system_app">System App</string>
     <string name="adb_installed">ADB Installed</string>
+    <string name="self_updating_apps">Self-updating Apps</string>
     <string name="load_complete">App list loaded</string>
+    <string name="already_refreshing">Refresh in progress, please wait...</string>
     <string name="error_prefix">Error: %s</string>
     <string name="follow_system">Follow system</string>
     <string name="source_prefix">Source: %s</string>
@@ -45,6 +47,8 @@
     <string name="menu_go_to_market">View in market</string>
     <string name="menu_configure_update_url">Configure update URL</string>
     <string name="menu_go_to_update_url">Go to update URL</string>
+    <string name="menu_copy_package_name">Copy package name</string>
+    <string name="package_name_copied">Package name copied to clipboard</string>
     <string name="update_url_not_set">Update URL not set</string>
     <string name="configure_update_url_title">Configure Update URL</string>
     <string name="update_url_label">Update URL</string>
