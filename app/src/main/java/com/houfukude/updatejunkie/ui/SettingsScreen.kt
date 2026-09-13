@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.AlertDialog
@@ -265,23 +266,26 @@ fun SettingsScreenContent(
             )
             ListItem(
                 headlineContent = { Text(stringResource(R.string.import_config)) },
+                supportingContent = { Text(stringResource(R.string.tv_import_summary)) },
                 leadingContent = { Icon(Icons.Default.FileUpload, contentDescription = null) },
                 modifier = Modifier.clickable { showImportDialog = true }
             )
             ListItem(
                 headlineContent = { Text(stringResource(R.string.view_config)) },
+                supportingContent = { Text(stringResource(R.string.tv_view_config_summary)) },
                 leadingContent = { Icon(Icons.Default.Info, contentDescription = null) },
                 modifier = Modifier.clickable { showViewConfigDialog = true }
             )
             ListItem(
                 headlineContent = { Text(stringResource(R.string.export_config)) },
+                supportingContent = { Text(stringResource(R.string.tv_export_summary)) },
                 leadingContent = { Icon(Icons.Default.FileDownload, contentDescription = null) },
                 modifier = Modifier.clickable { showExportDialog = true }
             )
             ListItem(
-                headlineContent = { Text(stringResource(R.string.build_time)) },
+                headlineContent = { Text(stringResource(R.string.tv_changelog)) },
                 supportingContent = { Text(BuildConfig.BUILD_TIME) },
-                leadingContent = { Icon(Icons.Default.Info, contentDescription = null) },
+                leadingContent = { Icon(Icons.Default.History, contentDescription = null) },
                 modifier = Modifier.clickable { onFetchChangelog() }
             )
             ListItem(

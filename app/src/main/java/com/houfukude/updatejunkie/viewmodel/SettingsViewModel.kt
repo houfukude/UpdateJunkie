@@ -3,6 +3,7 @@ package com.houfukude.updatejunkie.viewmodel
 import android.app.Application
 import android.net.Uri
 import android.net.nsd.NsdServiceInfo
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.houfukude.updatejunkie.BuildConfig
@@ -224,6 +225,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             appConfigRepository.importConfigs(jsonObject)
             _eventFlow.emit(SettingsEvent.ShowToast(R.string.import_success))
         } catch (e: Exception) {
+            Log.e("SettingsViewModel", "Invalid config format", e)
             _eventFlow.emit(SettingsEvent.ShowToast(R.string.invalid_config_format))
         }
     }
@@ -284,7 +286,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 // 4. (?=\r?\n(?:##|---)|\z) 匹配到下一个标题、分割线或文件末尾
                 val sectionRegex = { v: String ->
                     Regex(
-                        "##\\s*\\[${Regex.escape(v)}\\][^\\n]*(?:\\r?\\n)+(.*?)(?=\\r?\\n(?:##|---)|\\z)",
+                        "##\\s*\\[${Regex.escape(v)}][^\\n]*(?:\\r?\\n)+(.*?)(?=\\r?\\n(?:##|---)|\\z)",
                         RegexOption.DOT_MATCHES_ALL
                     )
                 }

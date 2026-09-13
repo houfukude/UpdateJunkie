@@ -78,4 +78,13 @@
     <string name="btn_import">Import</string>
     <string name="no_search_results">No matching apps found</string>
     <string name="clear_filters">Clear filters</string>
+    <string name="tv_welcome_hint">Manage your TV app updates</string>
+    <string name="tv_import_summary">Import from URL, file, or LAN</string>
+    <string name="tv_view_config_summary">View current configuration JSON</string>
+    <string name="tv_export_summary">Export to file or enable LAN sharing</string>
+    <string name="tv_changelog">Changelog</string>
+    <string name="tv_go_back">Back to Home</string>
+    <string name="tv_loading" tools:ignore="TypographyEllipsis">Loading, please wait...</string>
+    <string name="tv_lan_on">Close LAN Sharing</string>
+    <string name="tv_lan_off">Open LAN Sharing</string>
 </resources>

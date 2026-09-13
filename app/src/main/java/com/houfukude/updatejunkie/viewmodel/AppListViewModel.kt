@@ -1,13 +1,17 @@
 package com.houfukude.updatejunkie.viewmodel
 
 import android.app.Application
+import android.content.Context
+import android.content.res.Configuration
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.houfukude.updatejunkie.R
 import com.houfukude.updatejunkie.data.AppConfigRepository
 import com.houfukude.updatejunkie.data.AppLoadResult
 import com.houfukude.updatejunkie.data.AppRepository
+import com.houfukude.updatejunkie.data.LanguageConfig
 import com.houfukude.updatejunkie.data.SettingsRepository
 import com.houfukude.updatejunkie.model.AppInfo
 import com.houfukude.updatejunkie.utils.MarketUtils
@@ -16,9 +20,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 /**
  * 应用列表页的 ViewModel。
@@ -98,6 +102,10 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     val showConfiguredOnly: StateFlow<Boolean> = settingsRepository.showConfiguredOnly
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    /** 当前语言配置流。 */
+    val languageConfig: StateFlow<LanguageConfig> = settingsRepository.languageConfig
+        .stateIn(viewModelScope, SharingStarted.Eagerly, LanguageConfig.FOLLOW_SYSTEM)
+
     /**
      * 参与列表过滤的一组条件参数。
      *
@@ -130,9 +138,12 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
      * 当前所有应用中出现过的安装来源，按优先级与名称排序。
      * 优先从已扫描的应用中提取安装来源的友好名称（Label）。
      */
-    val availableInstallers: StateFlow<List<InstallerFilterItem>> = _allApps.map { apps ->
+    val availableInstallers: StateFlow<List<InstallerFilterItem>> = combine(
+        _allApps,
+        languageConfig
+    ) { apps, _ ->
         val pkgToLabel = apps.associate { it.packageName to it.label }
-        val app = getApplication<Application>()
+        val localizedContext = getLocalizedContext()
 
         // 提取所有出现的来源 Key 并建立对应的友好 Label
         val keyToLabel = apps.map { appInfo ->
@@ -144,14 +155,11 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
             }
         }.distinct().associateWith { key ->
             when (key) {
-                MarketUtils.SYSTEM_APP_INSTALLER -> app.getString(R.string.system_app)
-                ADB_INSTALLER -> app.getString(R.string.adb_installed)
-                SELF_UPDATER -> app.getString(R.string.self_updating_apps)
+                MarketUtils.SYSTEM_APP_INSTALLER -> getLocalizedString(R.string.system_app)
+                ADB_INSTALLER -> getLocalizedString(R.string.adb_installed)
+                SELF_UPDATER -> getLocalizedString(R.string.self_updating_apps)
                 else -> {
-                    // 1. 优先使用扫描到的安装来源 App 本身的名称
-                    // 2. 其次使用 MarketUtils 定义的名称
-                    // 3. 最后回退到包名
-                    pkgToLabel[key] ?: MarketUtils.getMarketLabel(app, key)
+                    pkgToLabel[key] ?: MarketUtils.getMarketLabel(localizedContext, key)
                 }
             }
         }
@@ -189,8 +197,8 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
      * 优先展示 Loading，其次 Error，最后按条件过滤后输出 [AppListUiState.Success]。
      */
     val uiState: StateFlow<AppListUiState> = combine(
-        _allApps, _isLoading, _error, filterParams
-    ) { allApps, loading, error, filters ->
+        _allApps, _isLoading, _error, filterParams, languageConfig
+    ) { allApps, loading, error, filters, _ ->
         when {
             loading -> AppListUiState.Loading
             error != null -> AppListUiState.Error(error)
@@ -244,10 +252,17 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                         else -> appInfo.installerPackageName
                     }
                     val optimizedLabel = when (key) {
-                        MarketUtils.SYSTEM_APP_INSTALLER -> app.getString(R.string.system_app)
-                        ADB_INSTALLER -> app.getString(R.string.adb_installed)
-                        SELF_UPDATER -> app.getString(R.string.self_updating_apps)
-                        else -> pkgToLabel[key] ?: appInfo.installerLabel
+                        MarketUtils.SYSTEM_APP_INSTALLER -> getLocalizedString(R.string.system_app)
+                        ADB_INSTALLER -> getLocalizedString(R.string.adb_installed)
+                        SELF_UPDATER -> getLocalizedString(R.string.self_updating_apps)
+                        else -> {
+                            // 优先使用包名对应的友好名称（如果是已安装的应用）
+                            // 其次调用工具类获取（传入 localizedContext 以获取正确的 Unknown 等翻译）
+                            pkgToLabel[key] ?: MarketUtils.getMarketLabel(
+                                getLocalizedContext(),
+                                key
+                            )
+                        }
                     }
                     if (appInfo.installerLabel != optimizedLabel) {
                         appInfo.copy(installerLabel = optimizedLabel)
@@ -303,8 +318,11 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
      */
     fun loadApps() {
         if (_isRefreshing.value) {
-            val app = getApplication<Application>()
-            Toast.makeText(app, R.string.already_refreshing, Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                getApplication(),
+                getLocalizedString(R.string.already_refreshing),
+                Toast.LENGTH_SHORT
+            ).show()
             return
         }
         viewModelScope.launch {
@@ -349,7 +367,11 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                             }
                         }
                     }
-                Toast.makeText(getApplication(), R.string.load_complete, Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    getApplication(),
+                    getLocalizedString(R.string.load_complete),
+                    Toast.LENGTH_SHORT
+                ).show()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Unknown error"
             } finally {
@@ -405,6 +427,40 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
             settingsRepository.setShowConfiguredOnly(false)
             settingsRepository.setSelectedInstallers(emptySet())
         }
+    }
+
+    /**
+     * 获取当前语言对应的 Context。
+     */
+    private fun getLocalizedContext(): Context {
+        val app = getApplication<Application>()
+        val locales = AppCompatDelegate.getApplicationLocales()
+
+        // 优先使用 AppCompatDelegate 的 Locale（因为它是 UI 实际生效的语言）
+        // 如果为空，则根据 languageConfig 从 repository 推导
+        val locale = if (!locales.isEmpty) {
+            locales.get(0)
+        } else {
+            when (languageConfig.value) {
+                LanguageConfig.CHINESE -> Locale.SIMPLIFIED_CHINESE
+                LanguageConfig.ENGLISH -> Locale.ENGLISH
+                else -> null
+            }
+        }
+
+        if (locale == null) return app
+
+        val config = Configuration(app.resources.configuration)
+        config.setLocale(locale)
+        return app.createConfigurationContext(config)
+    }
+
+    /**
+     * 根据当前 [AppCompatDelegate] 设置的语言获取字符串。
+     * 解决 AndroidViewModel 中 Application Context 语言不随应用设置更新的问题。
+     */
+    private fun getLocalizedString(resId: Int): String {
+        return getLocalizedContext().getString(resId)
     }
 
     /**

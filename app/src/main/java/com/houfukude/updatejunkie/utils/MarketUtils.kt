@@ -2,6 +2,7 @@ package com.houfukude.updatejunkie.utils
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.annotation.ColorRes
 import androidx.core.net.toUri
 import com.houfukude.updatejunkie.R
@@ -120,6 +121,7 @@ object MarketUtils {
             }
             context.startActivity(intent)
         } catch (e: Exception) {
+            Log.e("MarketUtils", "Failed to launch market", e)
             // Fallback to universal market URI instead of hardcoded web link
             try {
                 val fallbackIntent = Intent(
@@ -129,7 +131,7 @@ object MarketUtils {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(fallbackIntent)
-            } catch (ignored: Exception) {
+            } catch (_: Exception) {
             }
         }
     }

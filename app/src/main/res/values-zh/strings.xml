@@ -78,4 +78,13 @@
     <string name="btn_import">导入</string>
     <string name="no_search_results">未搜索到匹配的应用</string>
     <string name="clear_filters">重置筛选条件</string>
+    <string name="tv_welcome_hint">管理您的电视应用更新</string>
+    <string name="tv_import_summary">从 URL、文件或局域网导入</string>
+    <string name="tv_view_config_summary">查看当前配置 JSON</string>
+    <string name="tv_export_summary">导出配置到文件或开启局域网共享</string>
+    <string name="tv_changelog">更新日志</string>
+    <string name="tv_go_back">返回主页</string>
+    <string name="tv_loading" tools:ignore="TypographyEllipsis">加载中，请稍候...</string>
+    <string name="tv_lan_on">关闭局域网共享</string>
+    <string name="tv_lan_off">开启局域网共享</string>
 </resources>

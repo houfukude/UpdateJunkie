@@ -104,6 +104,11 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
+
+    // Compose for TV dependencies
+    implementation(libs.androidx.tv.material)
+    implementation(libs.androidx.tv.foundation)
+
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

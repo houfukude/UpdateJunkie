@@ -48,7 +48,7 @@ object ShizukuManager {
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            android.util.Log.i("ShizukuManager", "Service connected: $name")
+            Log.i("ShizukuManager", "Service connected: $name")
             val stub = IShizukuService.Stub.asInterface(service)
             userService = stub
             isBinding = false
@@ -58,11 +58,11 @@ object ShizukuManager {
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            android.util.Log.w("ShizukuManager", "Service disconnected")
+            Log.w("ShizukuManager", "Service disconnected")
             userService = null
             isBinding = false
             if (serviceDeferred.isCompleted) {
-                serviceDeferred = CompletableDeferred<IShizukuService>()
+                serviceDeferred = CompletableDeferred()
             }
         }
     }
@@ -84,8 +84,14 @@ object ShizukuManager {
         if (userService != null || !hasPermission() || isBinding) return
         isBinding = true
 
-        val isDebug = (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
-        val args = Shizuku.UserServiceArgs(ComponentName(context.packageName, ShizukuUserService::class.java.name))
+        val isDebug =
+            (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        val args = Shizuku.UserServiceArgs(
+            ComponentName(
+                context.packageName,
+                ShizukuUserService::class.java.name
+            )
+        )
             .processNameSuffix("service")
             .debuggable(isDebug)
             .version(1)
@@ -93,10 +99,10 @@ object ShizukuManager {
             .tag("app_update_junkie_service")
 
         try {
-            android.util.Log.d("ShizukuManager", "Binding user service...")
+            Log.d("ShizukuManager", "Binding user service...")
             Shizuku.bindUserService(args, serviceConnection)
         } catch (e: Exception) {
-            android.util.Log.e("ShizukuManager", "Bind failed", e)
+            Log.e("ShizukuManager", "Bind failed", e)
             isBinding = false
         }
     }
@@ -104,11 +110,11 @@ object ShizukuManager {
     private suspend fun getService(): IShizukuService? {
         if (userService != null) return userService
         if (!hasPermission()) {
-            android.util.Log.w("ShizukuManager", "No permission, skip service")
+            Log.w("ShizukuManager", "No permission, skip service")
             return null
         }
-        
-        android.util.Log.d("ShizukuManager", "Waiting for service...")
+
+        Log.d("ShizukuManager", "Waiting for service...")
         return withTimeoutOrNull(3000.milliseconds) {
             serviceDeferred.await()
         }
@@ -117,28 +123,29 @@ object ShizukuManager {
     /**
      * 对指定包获取安装信息。
      */
-    suspend fun getInstallInfo(packageName: String): PackageInstallInfo? = withContext(Dispatchers.IO) {
-        val service = getService() ?: run {
-            android.util.Log.w("ShizukuManager", "Service not available for $packageName")
-            return@withContext null
-        }
+    suspend fun getInstallInfo(packageName: String): PackageInstallInfo? =
+        withContext(Dispatchers.IO) {
+            val service = getService() ?: run {
+                Log.w("ShizukuManager", "Service not available for $packageName")
+                return@withContext null
+            }
 
-        try {
-            android.util.Log.d("ShizukuManager", "Calling service for $packageName")
-            val bundle = service.getInstallInfo(packageName) ?: return@withContext null
-            val initiating = bundle.getString("initiating")
-            val originating = bundle.getString("originating")
-            val users: List<Int> = bundle.getIntArray("users")?.toList() ?: emptyList()
+            try {
+                Log.d("ShizukuManager", "Calling service for $packageName")
+                val bundle = service.getInstallInfo(packageName) ?: return@withContext null
+                val initiating = bundle.getString("initiating")
+                val originating = bundle.getString("originating")
+                val users: List<Int> = bundle.getIntArray("users")?.toList() ?: emptyList()
 
-            PackageInstallInfo(
-                installerPackageName = resolveInstaller(initiating, originating),
-                users = users
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
+                PackageInstallInfo(
+                    installerPackageName = resolveInstaller(initiating, originating),
+                    users = users
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
         }
-    }
 
     private fun resolveInstaller(initiating: String?, originating: String?): String? {
         // 1. 优先使用原始来源 (Originating)，如果是 Chrome 或浏览器下载通常在此处
@@ -153,6 +160,7 @@ object ShizukuManager {
         return originating ?: initiating
     }
 
+    @Suppress("UNUSED_PARAMETER")
     suspend fun resolveUserId(packageName: String): Int {
         return getInstallInfo(packageName)?.users?.firstOrNull() ?: 0
     }
@@ -162,6 +170,7 @@ object ShizukuManager {
         val users: List<Int>
     )
 
+    @Suppress("UNUSED_PARAMETER")
     suspend fun getInstalledUsers(packageName: String): List<Int> {
         return getInstallInfo(packageName)?.users ?: emptyList()
     }
@@ -171,6 +180,7 @@ object ShizukuManager {
             context.packageManager.getPackageInfo("moe.shizuku.privileged.api", 0)
             true
         } catch (e: PackageManager.NameNotFoundException) {
+            Log.w("ShizukuManager", "Package not found: moe.shizuku.privileged.api", e)
             false
         } catch (e: Throwable) {
             e.printStackTrace()
@@ -183,7 +193,7 @@ object ShizukuManager {
             Shizuku.pingBinder()
         } catch (e: NoSuchElementException) {
             // 捕获 "Death link does not exist" 相关的异常
-            Log.w("ShizukuManager", "pingBinder: Death link not found")
+            Log.w("ShizukuManager", "pingBinder: Death link not found", e)
             false
         } catch (e: Throwable) {
             e.printStackTrace()
@@ -195,13 +205,13 @@ object ShizukuManager {
         return try {
             val res = if (Shizuku.isPreV11()) false
             else Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
-            android.util.Log.d("ShizukuManager", "hasPermission: $res")
+            Log.d("ShizukuManager", "hasPermission: $res")
             res
         } catch (e: NoSuchElementException) {
-            Log.w("ShizukuManager", "checkSelfPermission: Death link not found")
+            Log.w("ShizukuManager", "checkSelfPermission: Death link not found", e)
             false
         } catch (e: Throwable) {
-            android.util.Log.e("ShizukuManager", "checkPermission failed", e)
+            Log.e("ShizukuManager", "checkPermission failed", e)
             false
         }
     }
@@ -216,6 +226,7 @@ object ShizukuManager {
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun getUid(): Int {
         return try {
             Shizuku.getUid()

@@ -1,5 +1,8 @@
 package com.houfukude.updatejunkie
 
+//import androidx.tv.material3.MaterialTheme as TvMaterialTheme
+//import com.houfukude.updatejunkie.ui.tv.TvMainScreen
+//import com.houfukude.updatejunkie.ui.tv.TvSettingsScreen
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.compose.BackHandler
@@ -16,9 +19,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.os.LocaleListCompat
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 import com.houfukude.updatejunkie.data.LanguageConfig
 import com.houfukude.updatejunkie.data.ThemeConfig
-import com.houfukude.updatejunkie.shizuku.ShizukuManager
 import com.houfukude.updatejunkie.ui.MainScreen
 import com.houfukude.updatejunkie.ui.Screen
 import com.houfukude.updatejunkie.ui.SettingsScreen
@@ -57,12 +60,12 @@ class MainActivity : AppCompatActivity() {
      *
      * @param savedInstanceState 重建时保存的状态，可为 null
      */
+    @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // 初始化 Shizuku 管理器并注册监听器
-        ShizukuManager.init()
+        // 注册 Shizuku 监听器
         try {
             Shizuku.addBinderReceivedListener(binderReceivedListener)
             Shizuku.addRequestPermissionResultListener(permissionResultListener)
@@ -92,22 +95,42 @@ class MainActivity : AppCompatActivity() {
                 ThemeConfig.DARK -> true
             }
 
-            UpdateJunkieTheme(darkTheme = darkTheme) {
-                var currentScreen by remember { mutableStateOf(Screen.Main) }
+            var currentScreen by remember { mutableStateOf(Screen.Main) }
 
-                BackHandler(enabled = currentScreen != Screen.Main) {
-                    currentScreen = Screen.Main
-                }
+            BackHandler(enabled = currentScreen != Screen.Main) {
+                currentScreen = Screen.Main
+            }
 
-                when (currentScreen) {
-                    Screen.Main -> MainScreen(
-                        viewModel = viewModel,
-                        onSettingsClick = { currentScreen = Screen.Settings }
-                    )
-                    Screen.Settings -> SettingsScreen(
-                        viewModel = settingsViewModel,
-                        onBack = { currentScreen = Screen.Main }
-                    )
+            if (APP.isTvMode) {
+                // TV 端主题与界面
+//                TvMaterialTheme {
+//                    when (currentScreen) {
+//                        Screen.Main -> TvMainScreen(
+//                            viewModel = viewModel,
+//                            onSettingsClick = { currentScreen = Screen.Settings },
+//                            onGetUpdateUrl = { viewModel.getUpdateUrl(it) },
+//                            onSetUpdateUrl = { pkg, url -> viewModel.setUpdateUrl(pkg, url) }
+//                        )
+//                        Screen.Settings -> TvSettingsScreen(
+//                            viewModel = settingsViewModel,
+//                            onBack = { currentScreen = Screen.Main }
+//                        )
+//                    }
+//                }
+            } else {
+                // 手机端主题与界面
+                UpdateJunkieTheme(darkTheme = darkTheme) {
+                    when (currentScreen) {
+                        Screen.Main -> MainScreen(
+                            viewModel = viewModel,
+                            onSettingsClick = { currentScreen = Screen.Settings }
+                        )
+
+                        Screen.Settings -> SettingsScreen(
+                            viewModel = settingsViewModel,
+                            onBack = { currentScreen = Screen.Main }
+                        )
+                    }
                 }
             }
         }

@@ -20,11 +20,11 @@ import java.net.Socket
  * 局域网配置共享管理器。
  * 提供基于 NSD (Network Service Discovery) 的设备发现及简单的 TCP 配置文件传输。
  */
-class LanManager(private val context: Context) {
+class LanManager(context: Context) {
     private val nsdManager = try {
         context.getSystemService(Context.NSD_SERVICE) as? NsdManager
     } catch (e: Exception) {
-        Log.e("LanManager", "Failed to get NsdManager", e)
+        Log.e("LanManager", "Failed to get NSD_Manager", e)
         null
     }
     private val serviceType = "_updatejunkie._tcp"
@@ -59,6 +59,7 @@ class LanManager(private val context: Context) {
                         val client = try {
                             socket.accept()
                         } catch (e: Exception) {
+                            Log.e("LanManager", "Failed to accept client", e)
                             break
                         }
                         launch { handleClient(client, jsonProvider()) }
@@ -79,13 +80,15 @@ class LanManager(private val context: Context) {
         try {
             serverSocket?.close()
             serverSocket = null
-        } catch (e: Exception) { /* ignore */
+        } catch (_: Exception) {
+            /* ignore */
         }
 
         registrationListener?.let {
             try {
                 nsdManager?.unregisterService(it)
-            } catch (e: Exception) { /* ignore */
+            } catch (_: Exception) {
+                /* ignore */
             }
             registrationListener = null
         }
@@ -108,8 +111,8 @@ class LanManager(private val context: Context) {
         )
 
         val serviceInfo = NsdServiceInfo().apply {
-            setServiceName(name)
-            setServiceType(type)
+            serviceName = name
+            serviceType = type
             setPort(port)
         }
 
@@ -144,8 +147,8 @@ class LanManager(private val context: Context) {
             if (name != "UpdateJunkie") {
                 Log.i("LanManager", "Retrying with fallback name 'UpdateJunkie'...")
                 val fallbackInfo = NsdServiceInfo().apply {
-                    setServiceName("UpdateJunkie")
-                    setServiceType(type)
+                    serviceName = "UpdateJunkie"
+                    serviceType = type
                     setPort(port)
                 }
                 try {
@@ -191,6 +194,7 @@ class LanManager(private val context: Context) {
                 try {
                     manager.stopServiceDiscovery(this)
                 } catch (e: Exception) {
+                    Log.e("LanManager", "Failed to stop discovery", e)
                 }
             }
 
@@ -198,6 +202,7 @@ class LanManager(private val context: Context) {
                 try {
                     manager.stopServiceDiscovery(this)
                 } catch (e: Exception) {
+                    Log.e("LanManager", "Failed to stop discovery", e)
                 }
             }
 
@@ -248,7 +253,8 @@ class LanManager(private val context: Context) {
         discoveryListener?.let {
             try {
                 nsdManager?.stopServiceDiscovery(it)
-            } catch (e: Exception) { /* ignore */
+            } catch (_: Exception) {
+                /* ignore */
             }
             discoveryListener = null
         }
