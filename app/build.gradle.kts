@@ -12,17 +12,15 @@ plugins {
 android {
     namespace = "com.houfukude.updatejunkie"
     compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
+        version = release(37)
     }
 
     defaultConfig {
         applicationId = "com.houfukude.updatejunkie"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
     }
 
     signingConfigs {
@@ -82,6 +80,7 @@ androidComponents {
         variant.outputs.forEach { output ->
             val versionName = android.defaultConfig.versionName ?: "1.1"
             val applicationId = android.defaultConfig.applicationId ?: "com.houfukude.updatejunkie"
+            @Suppress("UnstableApiUsage")
             output.outputFileName.set("${applicationId}_${versionName}_${variant.name}.apk")
         }
     }

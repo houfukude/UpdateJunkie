@@ -16,6 +16,36 @@
 
 ---
 
+## [1.2] - 2026-09-13
+
+### 新增
+
+- **Android TV 支持**：
+  - 引入专为大屏优化的 `TvMainScreen` 和 `TvSettingsScreen`。
+  - 新增 `TvAppItem` 组件，支持遥控器（D-Pad）导航、焦点缩放及高对比度选中反馈。
+  - 在 TV 端集成筛选功能、扫描进度条及操作菜单对话框。
+  - 适配 TV 端本地化逻辑，确保跨语言环境下的资源同步。
+- **全局架构增强**：引入全局 `APP` 类，统一处理 Shizuku 初始化、设备模式检测（`isTvMode`）及全局调试状态（
+  `isNoisyMode`）。
+
+### 变更
+
+- **Shizuku 交互优化**：将 `ShizukuStatusCard` 从主界面迁移至设置界面，简化主流程并减少视觉干扰。
+- **配置管理优化**：
+  - 将默认配置导入 URL 指向 GitHub Master 分支，确保持续获取最新通用配置。
+  - 导出配置文件时不再携带版本号后缀，规范化文件管理。
+- **TV 视觉优化**：
+  - 为 TV 端引入自定义高辨识度焦点配色（如琥珀金或高对比度黑白反转）。
+  - 在 TV 主界面补全 `LinearProgressIndicator` 扫描进度条。
+
+### 修复
+
+- **国际化修复**：彻底解决在手动切换应用语言后，部分 Toast 提示、筛选器标签及列表状态无法立即同步翻译的
+  BUG。
+- **稳定性增强**：
+  - 优化 `ShizukuUserService` 日志处理，接入「吵闹模式」控制，减少 ADB/Root 进程的无效日志输出。
+  - 修正了 TV 端部分交互组件点击无效或焦点丢失的问题。
+
 ## [1.1] - 2026-09-12
 
 ### 新增
@@ -72,7 +102,9 @@
 - 针对 Android 14+ 进行 Binder 稳定性增强，支持 Shizuku 服务断开自动重连与异常防护。
 - 修复 `AndroidManifest.xml` 中的 Lint 静态检查警告。
 
-[未发布]: https://github.com/houfukude/UpdateJunkie/compare/v1.1...HEAD
+[未发布]: https://github.com/houfukude/UpdateJunkie/compare/v1.2...HEAD
+
+[1.2]: https://github.com/houfukude/UpdateJunkie/releases/tag/v1.2
 
 [1.1]: https://github.com/houfukude/UpdateJunkie/releases/tag/v1.1
 

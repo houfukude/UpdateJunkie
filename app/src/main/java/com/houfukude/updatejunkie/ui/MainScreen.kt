@@ -60,8 +60,8 @@ import com.houfukude.updatejunkie.viewmodel.AppListViewModel
 /**
  * 应用内可切换的页面。
  *
- * @property Main 应用列表面
- * @property Settings 设置页
+ * @property "Main" 应用列表面
+ * @property "Settings" 设置页
  */
 enum class Screen {
     Main,

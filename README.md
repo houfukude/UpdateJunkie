@@ -3,6 +3,7 @@
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-%E2%9C%93-4285F4?logo=jetpackcompose&logoColor=white)
 ![Shizuku](https://img.shields.io/badge/Shizuku-%E2%9C%93-3DDC84)
 ![Material 3](https://img.shields.io/badge/Material_3-%E2%9C%93-757575)
+![Android TV](https://img.shields.io/badge/Android_TV-%E2%9C%93-00ACC1?logo=androidtv&logoColor=white)
 [![构建状态](https://img.shields.io/github/actions/workflow/status/houfukude/UpdateJunkie/build-release.yml?branch=release&label=%E6%9E%84%E5%BB%BA%E7%8A%B6%E6%80%81)](https://github.com/houfukude/UpdateJunkie/actions/workflows/build-release.yml)
 [![发布日](https://img.shields.io/github/release-date-pre/houfukude/UpdateJunkie?label=%E5%8F%91%E5%B8%83%E6%97%A5)](https://github.com/houfukude/UpdateJunkie/releases)
 [![版本](https://img.shields.io/github/v/release/houfukude/UpdateJunkie?include_prereleases&label=%E7%89%88%E6%9C%AC)](https://github.com/houfukude/UpdateJunkie/releases)
@@ -42,10 +43,12 @@
   - **流式增量加载**：解析完一个显示一个，实时进度追踪，彻底告别 Loading 等待。
   - **Shizuku 优化**：针对 Android 14+ 进行了 Binder 稳定性增强，支持服务断开自动重连与异常防护。
 - **现代化交互设计**：完全基于 Jetpack Compose 与 Material 3 规范开发，支持深色模式与多语言（中/英）。
+- **Android TV 完美适配**：提供专为大屏设计的 UI 交互，完美支持遥控器 (D-Pad) 操作与焦点反馈。
 
 ## 🛠️ 技术栈
 
 - **Jetpack Compose**：全响应式 UI 构建。
+- **Compose for TV**：针对 Android TV 大屏的专属 UI 库。
 - **Material 3**：Google 最新设计语言。
 - **Shizuku API**：实现底层权限调用的核心方案。
 - **Kotlin Flow & Coroutines**：异步非阻塞逻辑。
@@ -97,12 +100,15 @@
 - **导入体验**：通过 URL 导入时默认自动填充对应版本的官方 Release 配置文件地址，并持久化用户最后的输入。
 - **搜索优化**：优化搜索模式 UI，确保功能按钮不被遮挡，并新增搜索无结果时的「重置筛选条件」功能。
 - **稳定性修复**：解决扫描过程中重复触发刷新可能导致的崩溃问题。
-- **更新日志**：支持在设置页点击「构建时间」直接查看当前版本的更新内容。
+- **更新日志**：支持在设置页点击「更新日志」直接查看当前版本的更新内容。
+- **TV 适配**：完整支持 Android TV，包含网格化应用列表、D-Pad 导航及焦点视觉增强。
+- **配置优化**：优化默认配置导入路径与导出命名规则，支持从 master 分支动态获取最新配置。
 
 ## 📝 TODO
 
 待实现的功能规划：
 
+- [ ] **全量配置编辑**：支持手动添加和编辑配置，尤其是针对当前应用列表中不存在（未安装）的应用进行预配置。
 - [ ] 更多功能待补充……
 
 ---
