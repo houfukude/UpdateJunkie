@@ -10,7 +10,6 @@ import com.houfukude.updatejunkie.data.AppLoadResult
 import com.houfukude.updatejunkie.data.AppRepository
 import com.houfukude.updatejunkie.data.SettingsRepository
 import com.houfukude.updatejunkie.model.AppInfo
-import com.houfukude.updatejunkie.shizuku.ShizukuManager
 import com.houfukude.updatejunkie.utils.MarketUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -261,24 +260,10 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppListUiState.Loading)
 
-    /** Shizuku 应用是否已安装。 */
-    private val _isShizukuInstalled = MutableStateFlow(false)
-    val isShizukuInstalled: StateFlow<Boolean> = _isShizukuInstalled.asStateFlow()
-
-    /** Shizuku 服务是否正在运行。 */
-    private val _isShizukuAvailable = MutableStateFlow(false)
-    val isShizukuAvailable: StateFlow<Boolean> = _isShizukuAvailable.asStateFlow()
-
-    /** 本应用是否已获得 Shizuku 授权。 */
-    private val _hasShizukuPermission = MutableStateFlow(false)
-    val hasShizukuPermission: StateFlow<Boolean> = _hasShizukuPermission.asStateFlow()
-
     /**
-     * 初始化：先刷新 Shizuku 状态，再开始加载应用列表。
-     * 二者顺序不可颠倒，否则安装来源解析会因 Shizuku 状态未知而降级。
+     * 初始化：开始加载应用列表。
      */
     init {
-        refreshStatus()
         loadApps()
         observeConfigChanges()
     }
@@ -307,17 +292,6 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                 }
             }
         }
-    }
-
-    /**
-     * 重新查询并更新 Shizuku 的安装、运行与授权状态。
-     *
-     * 应在 Activity 创建、Shizuku Binder 连接、以及授权结果回调时调用。
-     */
-    fun refreshStatus() {
-        _isShizukuInstalled.value = ShizukuManager.isInstalled(getApplication())
-        _isShizukuAvailable.value = ShizukuManager.isAvailable()
-        _hasShizukuPermission.value = ShizukuManager.hasPermission()
     }
 
     /**
@@ -440,16 +414,6 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
      */
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
-    }
-
-    /**
-     * 向 Shizuku 发起授权请求。
-     *
-     * 授权结果通过 `Shizuku.OnRequestPermissionResultListener` 回调，
-     * 最终由 [refreshStatus] 统一刷新状态。
-     */
-    fun requestShizukuPermission() {
-        ShizukuManager.requestPermission()
     }
 
     /**

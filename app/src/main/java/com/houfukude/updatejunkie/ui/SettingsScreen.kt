@@ -65,6 +65,7 @@ import com.houfukude.updatejunkie.BuildConfig
 import com.houfukude.updatejunkie.R
 import com.houfukude.updatejunkie.data.LanguageConfig
 import com.houfukude.updatejunkie.data.ThemeConfig
+import com.houfukude.updatejunkie.ui.components.ShizukuStatusCard
 import com.houfukude.updatejunkie.ui.theme.UpdateJunkieTheme
 import com.houfukude.updatejunkie.viewmodel.SettingsViewModel
 
@@ -87,6 +88,10 @@ fun SettingsScreen(
     val lastImportUrl by viewModel.lastImportUrl.collectAsState()
     val changelogState by viewModel.changelogState.collectAsState()
 
+    val isShizukuInstalled by viewModel.isShizukuInstalled.collectAsState()
+    val isShizukuAvailable by viewModel.isShizukuAvailable.collectAsState()
+    val hasShizukuPermission by viewModel.hasShizukuPermission.collectAsState()
+
     LaunchedEffect(Unit) {
         viewModel.eventFlow.collect { event ->
             when (event) {
@@ -106,6 +111,14 @@ fun SettingsScreen(
         onThemeConfigChange = { viewModel.setThemeConfig(it) },
         languageConfig = languageConfig,
         onLanguageConfigChange = { viewModel.setLanguageConfig(it) },
+        isShizukuInstalled = isShizukuInstalled,
+        isShizukuAvailable = isShizukuAvailable,
+        hasShizukuPermission = hasShizukuPermission,
+        onRequestShizukuPermission = { viewModel.requestShizukuPermission() },
+        onDownloadShizuku = {
+            val intent = Intent(Intent.ACTION_VIEW, "https://shizuku.rikka.app/download/".toUri())
+            context.startActivity(intent)
+        },
         lastImportUrl = lastImportUrl,
         onImportFile = { viewModel.importConfigFromFile(it) },
         onImportUrl = { viewModel.importConfigFromUrl(it) },
@@ -161,6 +174,11 @@ fun SettingsScreenContent(
     onThemeConfigChange: (ThemeConfig) -> Unit,
     languageConfig: LanguageConfig,
     onLanguageConfigChange: (LanguageConfig) -> Unit,
+    isShizukuInstalled: Boolean,
+    isShizukuAvailable: Boolean,
+    hasShizukuPermission: Boolean,
+    onRequestShizukuPermission: () -> Unit,
+    onDownloadShizuku: () -> Unit,
     lastImportUrl: String,
     onImportFile: (Uri) -> Unit,
     onImportUrl: (String) -> Unit,
@@ -211,6 +229,14 @@ fun SettingsScreenContent(
         }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
+            ShizukuStatusCard(
+                isInstalled = isShizukuInstalled,
+                isAvailable = isShizukuAvailable,
+                hasPermission = hasShizukuPermission,
+                onRequestPermission = onRequestShizukuPermission,
+                onDownloadClick = onDownloadShizuku
+            )
+
             ListItem(
                 headlineContent = { Text(stringResource(R.string.language)) },
                 supportingContent = {
@@ -669,6 +695,11 @@ fun SettingsScreenPreview() {
             onThemeConfigChange = {},
             languageConfig = LanguageConfig.FOLLOW_SYSTEM,
             onLanguageConfigChange = {},
+            isShizukuInstalled = true,
+            isShizukuAvailable = true,
+            hasShizukuPermission = true,
+            onRequestShizukuPermission = {},
+            onDownloadShizuku = {},
             lastImportUrl = "https://example.com/config.json",
             onImportFile = {},
             onImportUrl = {},

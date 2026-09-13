@@ -1,6 +1,5 @@
 package com.houfukude.updatejunkie.ui
 
-import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,16 +46,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.houfukude.updatejunkie.R
 import com.houfukude.updatejunkie.model.AppInfo
 import com.houfukude.updatejunkie.ui.components.AppList
-import com.houfukude.updatejunkie.ui.components.ShizukuStatusCard
 import com.houfukude.updatejunkie.ui.theme.UpdateJunkieTheme
 import com.houfukude.updatejunkie.viewmodel.AppListUiState
 import com.houfukude.updatejunkie.viewmodel.AppListViewModel
@@ -87,11 +83,7 @@ fun MainScreen(
     viewModel: AppListViewModel = viewModel(),
     onSettingsClick: () -> Unit
 ) {
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    val isShizukuInstalled by viewModel.isShizukuInstalled.collectAsState()
-    val isShizukuAvailable by viewModel.isShizukuAvailable.collectAsState()
-    val hasShizukuPermission by viewModel.hasShizukuPermission.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val loadProgress by viewModel.loadProgress.collectAsState()
     val loadProgressText by viewModel.loadProgressText.collectAsState()
@@ -108,9 +100,6 @@ fun MainScreen(
 
     MainScreenContent(
         uiState = uiState,
-        isShizukuInstalled = isShizukuInstalled,
-        isShizukuAvailable = isShizukuAvailable,
-        hasShizukuPermission = hasShizukuPermission,
         isRefreshing = isRefreshing,
         loadProgress = loadProgress,
         loadProgressText = loadProgressText,
@@ -136,12 +125,7 @@ fun MainScreen(
         onSettingsClick = onSettingsClick,
         onGetUpdateUrl = { viewModel.getUpdateUrl(it) },
         onSetUpdateUrl = { pkg, url -> viewModel.setUpdateUrl(pkg, url) },
-        onClearFilters = { viewModel.clearAllFilters() },
-        onRequestShizukuPermission = { viewModel.requestShizukuPermission() },
-        onDownloadShizuku = {
-            val intent = Intent(Intent.ACTION_VIEW, "https://shizuku.rikka.app/download/".toUri())
-            context.startActivity(intent)
-        }
+        onClearFilters = { viewModel.clearAllFilters() }
     )
 }
 
@@ -150,12 +134,9 @@ fun MainScreen(
  *
  * 顶部工具栏提供刷新、筛选（系统应用 / 已禁用 / 安装来源）与设置入口；
  * 内容区根据 [uiState] 分别展示加载中、应用列表或错误提示。
- * 顶部固定的头部区域包含 Shizuku 状态卡片与加载进度条。
+ * 顶部固定的头部区域包含加载进度条。
  *
  * @param uiState 列表的加载状态
- * @param isShizukuInstalled Shizuku 是否已安装
- * @param isShizukuAvailable Shizuku 服务是否在运行
- * @param hasShizukuPermission 是否已获得 Shizuku 授权
  * @param isRefreshing 是否正在加载应用
  * @param loadProgress 加载进度，取值 0f ~ 1f
  * @param loadProgressText 加载进度文案
@@ -170,16 +151,11 @@ fun MainScreen(
  * @param onToggleDisabled 切换"显示已禁用应用"
  * @param onRefresh 触发重新加载应用列表
  * @param onSettingsClick 跳转设置页
- * @param onRequestShizukuPermission 请求 Shizuku 授权
- * @param onDownloadShizuku 跳转 Shizuku 下载页
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreenContent(
     uiState: AppListUiState,
-    isShizukuInstalled: Boolean,
-    isShizukuAvailable: Boolean,
-    hasShizukuPermission: Boolean,
     isRefreshing: Boolean,
     loadProgress: Float,
     loadProgressText: String,
@@ -202,9 +178,7 @@ fun MainScreenContent(
     onSettingsClick: () -> Unit,
     onGetUpdateUrl: (String) -> String?,
     onSetUpdateUrl: (String, String) -> Unit,
-    onClearFilters: () -> Unit,
-    onRequestShizukuPermission: () -> Unit,
-    onDownloadShizuku: () -> Unit
+    onClearFilters: () -> Unit
 ) {
     val focusRequester = remember { FocusRequester() }
 
@@ -360,14 +334,6 @@ fun MainScreenContent(
     ) { innerPadding ->
         val header = @Composable {
             Column {
-                ShizukuStatusCard(
-                    isInstalled = isShizukuInstalled,
-                    isAvailable = isShizukuAvailable,
-                    hasPermission = hasShizukuPermission,
-                    onRequestPermission = onRequestShizukuPermission,
-                    onDownloadClick = onDownloadShizuku
-                )
-
                 if (isRefreshing) {
                     Column(
                         modifier = Modifier
@@ -530,9 +496,6 @@ fun MainScreenPreview() {
                     )
                 )
             ),
-            isShizukuInstalled = true,
-            isShizukuAvailable = true,
-            hasShizukuPermission = false,
             isRefreshing = true,
             loadProgress = 0.5f,
             loadProgressText = "50 / 100",
@@ -558,9 +521,7 @@ fun MainScreenPreview() {
             onSettingsClick = {},
             onGetUpdateUrl = { null },
             onSetUpdateUrl = { _, _ -> },
-            onClearFilters = {},
-            onRequestShizukuPermission = {},
-            onDownloadShizuku = {}
+            onClearFilters = {}
         )
     }
 }
@@ -579,9 +540,6 @@ fun FilterMenuPreview() {
     UpdateJunkieTheme {
         MainScreenContent(
             uiState = AppListUiState.Success(emptyList()),
-            isShizukuInstalled = true,
-            isShizukuAvailable = true,
-            hasShizukuPermission = true,
             isRefreshing = false,
             loadProgress = 1.0f,
             loadProgressText = "100 / 100",
@@ -608,9 +566,7 @@ fun FilterMenuPreview() {
             onSettingsClick = {},
             onGetUpdateUrl = { null },
             onSetUpdateUrl = { _, _ -> },
-            onClearFilters = {},
-            onRequestShizukuPermission = {},
-            onDownloadShizuku = {}
+            onClearFilters = {}
         )
     }
 }

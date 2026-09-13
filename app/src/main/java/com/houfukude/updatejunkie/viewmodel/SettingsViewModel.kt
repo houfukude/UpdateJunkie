@@ -11,6 +11,7 @@ import com.houfukude.updatejunkie.data.AppConfigRepository
 import com.houfukude.updatejunkie.data.LanguageConfig
 import com.houfukude.updatejunkie.data.SettingsRepository
 import com.houfukude.updatejunkie.data.ThemeConfig
+import com.houfukude.updatejunkie.shizuku.ShizukuManager
 import com.houfukude.updatejunkie.utils.LanManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -51,6 +52,18 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /** 局域网服务端状态。 */
     val isLanServerRunning = lanManager.isServerRunning
 
+    /** Shizuku 应用是否已安装。 */
+    private val _isShizukuInstalled = MutableStateFlow(false)
+    val isShizukuInstalled: StateFlow<Boolean> = _isShizukuInstalled.asStateFlow()
+
+    /** Shizuku 服务是否正在运行。 */
+    private val _isShizukuAvailable = MutableStateFlow(false)
+    val isShizukuAvailable: StateFlow<Boolean> = _isShizukuAvailable.asStateFlow()
+
+    /** 本应用是否已获得 Shizuku 授权。 */
+    private val _hasShizukuPermission = MutableStateFlow(false)
+    val hasShizukuPermission: StateFlow<Boolean> = _hasShizukuPermission.asStateFlow()
+
     private val _changelogState = MutableStateFlow<ChangelogState>(ChangelogState.Idle)
     val changelogState: StateFlow<ChangelogState> = _changelogState.asStateFlow()
 
@@ -78,6 +91,26 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = ThemeConfig.FOLLOW_SYSTEM
         )
+
+    init {
+        refreshStatus()
+    }
+
+    /**
+     * 重新查询并更新 Shizuku 的安装、运行与授权状态。
+     */
+    fun refreshStatus() {
+        _isShizukuInstalled.value = ShizukuManager.isInstalled(getApplication())
+        _isShizukuAvailable.value = ShizukuManager.isAvailable()
+        _hasShizukuPermission.value = ShizukuManager.hasPermission()
+    }
+
+    /**
+     * 向 Shizuku 发起授权请求。
+     */
+    fun requestShizukuPermission() {
+        ShizukuManager.requestPermission()
+    }
 
     /**
      * 当前语言配置。

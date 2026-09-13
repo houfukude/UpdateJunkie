@@ -44,12 +44,12 @@ class MainActivity : AppCompatActivity() {
 
     /** Shizuku Binder 连接建立时的回调，用于刷新授权状态。 */
     private val binderReceivedListener = Shizuku.OnBinderReceivedListener {
-        viewModel.refreshStatus()
+        settingsViewModel.refreshStatus()
     }
 
     /** Shizuku 授权结果回调（无论同意或拒绝），用于刷新授权状态。 */
     private val permissionResultListener = Shizuku.OnRequestPermissionResultListener { _, _ ->
-        viewModel.refreshStatus()
+        settingsViewModel.refreshStatus()
     }
 
     /**
