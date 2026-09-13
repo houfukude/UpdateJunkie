@@ -15,7 +15,8 @@ class APP : Application() {
         /** 是否开启吵闹模式。 */
         var isNoisyMode: Boolean = false
 
-        var isTvMode: Boolean = true
+        /** 是否为 TV 模式。默认为 false，在 onCreate 中初始化。 */
+        var isTvMode: Boolean = false
     }
 
     override fun onCreate() {

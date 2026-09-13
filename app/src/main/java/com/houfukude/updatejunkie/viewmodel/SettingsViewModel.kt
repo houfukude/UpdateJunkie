@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import android.net.nsd.NsdServiceInfo
 import android.util.Log
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.houfukude.updatejunkie.BuildConfig
@@ -65,36 +66,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _hasShizukuPermission = MutableStateFlow(false)
     val hasShizukuPermission: StateFlow<Boolean> = _hasShizukuPermission.asStateFlow()
 
-    private val _changelogState = MutableStateFlow<ChangelogState>(ChangelogState.Idle)
-    val changelogState: StateFlow<ChangelogState> = _changelogState.asStateFlow()
-
-    sealed class ChangelogState {
-        object Idle : ChangelogState()
-        object Loading : ChangelogState()
-        data class Success(val version: String, val content: String) : ChangelogState()
-        data class Error(val message: String) : ChangelogState()
-    }
-
-    sealed class SettingsEvent {
-        data class ShowToast(val messageRes: Int) : SettingsEvent()
-        data class Error(val message: String) : SettingsEvent()
-    }
-
-    /**
-     * 当前主题配置。
-     *
-     * 在 [viewModelScope] 中通过 [SharingStarted.WhileSubscribed] 转换为热流，
-     * 无订阅者 5 秒后自动停止上游收集。
-     */
-    val themeConfig: StateFlow<ThemeConfig> = repository.themeConfig
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ThemeConfig.FOLLOW_SYSTEM
-        )
+    /** 配置是否已加载就绪。 */
+    private val _isReady = MutableStateFlow(false)
+    val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
 
     init {
         refreshStatus()
+        // 启动时标志位设为 false，确保 DataStore 至少读取过一次
+        viewModelScope.launch {
+            // 等待 DataStore 的第一个值发射以标记就绪
+            repository.themeConfig.collect {
+                _isReady.value = true
+            }
+        }
     }
 
     /**
@@ -113,6 +97,31 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         ShizukuManager.requestPermission()
     }
 
+    private val _changelogState = MutableStateFlow<ChangelogState>(ChangelogState.Idle)
+    val changelogState: StateFlow<ChangelogState> = _changelogState.asStateFlow()
+
+    sealed class ChangelogState {
+        object Idle : ChangelogState()
+        object Loading : ChangelogState()
+        data class Success(val version: String, val content: String) : ChangelogState()
+        data class Error(val message: String) : ChangelogState()
+    }
+
+    sealed class SettingsEvent {
+        data class ShowToast(val messageRes: Int) : SettingsEvent()
+        data class Error(val message: String) : SettingsEvent()
+    }
+
+    /**
+     * 当前主题配置。
+     */
+    val themeConfig: StateFlow<ThemeConfig> = repository.themeConfig
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = getInitialThemeConfig()
+        )
+
     /**
      * 当前语言配置。
      */
@@ -120,8 +129,25 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = LanguageConfig.FOLLOW_SYSTEM
+            initialValue = getInitialLanguageConfig()
         )
+
+    private fun getInitialThemeConfig(): ThemeConfig {
+        // 尝试从当前系统状态获取，避免第一帧闪烁
+        return ThemeConfig.FOLLOW_SYSTEM
+    }
+
+    private fun getInitialLanguageConfig(): LanguageConfig {
+        // 根据当前 AppCompatDelegate 的语言状态决定初始值
+        // 这样可以避免 LaunchedEffect 在启动时触发不必要的 setApplicationLocales(recreate)
+        val locales = AppCompatDelegate.getApplicationLocales()
+        return when {
+            locales.isEmpty -> LanguageConfig.FOLLOW_SYSTEM
+            locales.toLanguageTags().contains("zh") -> LanguageConfig.CHINESE
+            locales.toLanguageTags().contains("en") -> LanguageConfig.ENGLISH
+            else -> LanguageConfig.FOLLOW_SYSTEM
+        }
+    }
 
     /**
      * 最后一次使用的导入 URL。如果从未导入过，则返回默认的 GitHub Master 路径。

@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.os.LocaleListCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import com.houfukude.updatejunkie.data.LanguageConfig
 import com.houfukude.updatejunkie.data.ThemeConfig
@@ -63,7 +64,15 @@ class MainActivity : AppCompatActivity() {
      */
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
+        // 在 super.onCreate 之前安装启动页
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        // 保持启动页显示，直到 ViewModel 中的配置就绪
+        splashScreen.setKeepOnScreenCondition {
+            !settingsViewModel.isReady.value
+        }
+
         enableEdgeToEdge()
 
         // 注册 Shizuku 监听器
