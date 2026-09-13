@@ -59,7 +59,7 @@ jobs:
             echo "- 构建时间: ${BUILD_TIME}"
             echo "- 运行详情: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             echo "- APK: \`${PACKAGE_ID}_${VERSION}_release.apk\`"
-            echo "- 配置文件: \`${PACKAGE_ID}_${VERSION}_config.json\`"
+            echo "- 配置文件: \`${PACKAGE_ID}_config.json\`"
             echo ""
             echo "---"
           } > release_body.md
@@ -94,6 +94,6 @@ jobs:
           prerelease: false
           files: |
             app/build/outputs/apk/release/*.apk
-            config/${{ steps.get_info.outputs.package_id }}_${{ steps.get_info.outputs.version }}_config.json
+            config/${{ steps.get_info.outputs.package_id }}_config.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

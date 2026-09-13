@@ -428,7 +428,7 @@ fun TvSettingsScreenContent(
 
     if (showExportDialog) {
         val context = LocalContext.current
-        val exportFileName = "${context.packageName}_${BuildConfig.VERSION_NAME}_config.json"
+        val exportFileName = "${context.packageName}_config.json"
         AlertDialog(
             onDismissRequest = { showExportDialog = false },
             title = { Text(stringResource(R.string.export_dialog_title)) },

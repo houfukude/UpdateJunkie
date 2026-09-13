@@ -124,17 +124,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         )
 
     /**
-     * 最后一次使用的导入 URL。如果从未导入过，则返回默认的 GitHub Release URL。
+     * 最后一次使用的导入 URL。如果从未导入过，则返回默认的 GitHub Master 路径。
      */
     val lastImportUrl: StateFlow<String> = repository.lastImportUrl
         .map {
             it
-                ?: "https://github.com/houfukude/UpdateJunkie/releases/download/v${BuildConfig.VERSION_NAME}/com.houfukude.updatejunkie_${BuildConfig.VERSION_NAME}_config.json"
+                ?: "https://raw.githubusercontent.com/houfukude/UpdateJunkie/master/config/com.houfukude.updatejunkie_config.json"
         }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = "https://github.com/houfukude/UpdateJunkie/releases/download/v${BuildConfig.VERSION_NAME}/com.houfukude.updatejunkie_${BuildConfig.VERSION_NAME}_config.json"
+            initialValue = "https://raw.githubusercontent.com/houfukude/UpdateJunkie/master/config/com.houfukude.updatejunkie_config.json"
         )
 
     /**
