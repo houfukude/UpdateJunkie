@@ -1,8 +1,5 @@
 package com.houfukude.updatejunkie
 
-//import androidx.tv.material3.MaterialTheme as TvMaterialTheme
-//import com.houfukude.updatejunkie.ui.tv.TvMainScreen
-//import com.houfukude.updatejunkie.ui.tv.TvSettingsScreen
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.compose.BackHandler
@@ -26,9 +23,13 @@ import com.houfukude.updatejunkie.ui.MainScreen
 import com.houfukude.updatejunkie.ui.Screen
 import com.houfukude.updatejunkie.ui.SettingsScreen
 import com.houfukude.updatejunkie.ui.theme.UpdateJunkieTheme
+import com.houfukude.updatejunkie.ui.theme.UpdateJunkieTvTheme
+import com.houfukude.updatejunkie.ui.tv.TvMainScreen
+import com.houfukude.updatejunkie.ui.tv.TvSettingsScreen
 import com.houfukude.updatejunkie.viewmodel.AppListViewModel
 import com.houfukude.updatejunkie.viewmodel.SettingsViewModel
 import rikka.shizuku.Shizuku
+
 
 /**
  * 应用唯一入口 Activity，承载整个 Compose 界面。
@@ -103,20 +104,21 @@ class MainActivity : AppCompatActivity() {
 
             if (APP.isTvMode) {
                 // TV 端主题与界面
-//                TvMaterialTheme {
-//                    when (currentScreen) {
-//                        Screen.Main -> TvMainScreen(
-//                            viewModel = viewModel,
-//                            onSettingsClick = { currentScreen = Screen.Settings },
-//                            onGetUpdateUrl = { viewModel.getUpdateUrl(it) },
-//                            onSetUpdateUrl = { pkg, url -> viewModel.setUpdateUrl(pkg, url) }
-//                        )
-//                        Screen.Settings -> TvSettingsScreen(
-//                            viewModel = settingsViewModel,
-//                            onBack = { currentScreen = Screen.Main }
-//                        )
-//                    }
-//                }
+                UpdateJunkieTvTheme(darkTheme = darkTheme) {
+                    when (currentScreen) {
+                        Screen.Main -> TvMainScreen(
+                            viewModel = viewModel,
+                            onSettingsClick = { currentScreen = Screen.Settings },
+                            onGetUpdateUrl = { viewModel.getUpdateUrl(it) },
+                            onSetUpdateUrl = { pkg, url -> viewModel.setUpdateUrl(pkg, url) }
+                        )
+
+                        Screen.Settings -> TvSettingsScreen(
+                            viewModel = settingsViewModel,
+                            onBack = { currentScreen = Screen.Main }
+                        )
+                    }
+                }
             } else {
                 // 手机端主题与界面
                 UpdateJunkieTheme(darkTheme = darkTheme) {

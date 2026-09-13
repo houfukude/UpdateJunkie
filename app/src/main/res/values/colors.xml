@@ -27,4 +27,8 @@
     <color name="item_badge_disabled_bg">#808080</color>
     <color name="item_badge_system_icon">#FFA000</color>
     <color name="item_user_text">#7B1FA2</color>
+
+    <!-- TV Focus Colors -->
+    <color name="tv_focus_bg">#FF03DAC5</color>
+    <color name="tv_focus_text">#FFFFFF</color>
 </resources>

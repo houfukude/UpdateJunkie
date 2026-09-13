@@ -371,7 +371,7 @@ fun MainScreenContent(
         }
 
         Box(modifier = Modifier.padding(innerPadding)) {
-            when (val state = uiState) {
+            when (uiState) {
                 is AppListUiState.Loading -> {
                     Column {
                         header()
@@ -385,7 +385,7 @@ fun MainScreenContent(
                 }
 
                 is AppListUiState.Success -> {
-                    if (state.apps.isEmpty() && (isSearchActive || showSystem || showDisabled || showConfiguredOnly || selectedInstallers.isNotEmpty())) {
+                    if (uiState.apps.isEmpty() && (isSearchActive || showSystem || showDisabled || showConfiguredOnly || selectedInstallers.isNotEmpty())) {
                         Column {
                             header()
                             Column(
@@ -410,7 +410,7 @@ fun MainScreenContent(
                         }
                     } else {
                         AppList(
-                            apps = state.apps,
+                            apps = uiState.apps,
                             headerContent = header,
                             onGetUpdateUrl = onGetUpdateUrl,
                             onSetUpdateUrl = onSetUpdateUrl
@@ -426,7 +426,7 @@ fun MainScreenContent(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = stringResource(R.string.error_prefix, state.message),
+                                text = stringResource(R.string.error_prefix, uiState.message),
                                 color = MaterialTheme.colorScheme.error
                             )
                         }

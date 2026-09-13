@@ -20,6 +20,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import com.houfukude.updatejunkie.R
+import androidx.tv.material3.MaterialTheme as TvMaterialTheme
+import androidx.tv.material3.Typography as TvTypography
+import androidx.tv.material3.darkColorScheme as tvDarkColorScheme
+import androidx.tv.material3.lightColorScheme as tvLightColorScheme
 
 /**
  * 应用全局排版（Typography）配置。
@@ -101,6 +105,40 @@ fun UpdateJunkieTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        content = content
+    )
+}
+
+/**
+ * Android TV 专属主题容器。
+ *
+ * @param darkTheme 是否使用暗色主题
+ * @param content 主题包裹的内容
+ */
+@Composable
+fun UpdateJunkieTvTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
+    val colorScheme = if (darkTheme) {
+        tvDarkColorScheme(
+            primary = colorResource(R.color.primary),
+            secondary = colorResource(R.color.secondary),
+            tertiary = colorResource(R.color.tertiary)
+        )
+    } else {
+        tvLightColorScheme(
+            primary = colorResource(R.color.primary),
+            secondary = colorResource(R.color.secondary),
+            tertiary = colorResource(R.color.tertiary)
+        )
+    }
+
+    TvMaterialTheme(
+        colorScheme = colorScheme,
+        typography = TvTypography(
+            bodyLarge = Typography.bodyLarge
+        ),
         content = content
     )
 }
