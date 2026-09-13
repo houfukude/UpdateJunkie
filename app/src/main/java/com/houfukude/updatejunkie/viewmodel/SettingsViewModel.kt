@@ -280,13 +280,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val version = BuildConfig.VERSION_NAME
 
                 // 优化后的正则：
-                // 1. [^\n]* 确保只在标题行内匹配，不跨行
-                // 2. (?:\r?\n)+ 匹配一个或多个换行符
-                // 3. (.*?) 捕获正文
-                // 4. (?=\r?\n(?:##|---)|\z) 匹配到下一个标题、分割线或文件末尾
+                // 1. ##\s* 匹配标题开始
+                // 2. \[? 匹配可选的左括号
+                // 3. (?:v)? 匹配可选的 v 前缀
+                // 4. [^\]\n]* 匹配版本号文本
+                // 5. \]? 匹配可选的右括号
+                // 6. (?:[\s-]*\d{4}-\d{2}-\d{2})? 匹配可选的日期
+                // 7. (.*?) 捕获正文
+                // 8. (?=\r?\n(?:## [^#]|---)|\z) 预测结束位置：
+                //    - \r?\n## [^#] 确保匹配的是二级标题（版本号），排除了三级标题（### 新增等）
+                //    - --- 匹配分割线
+                //    - \z 匹配文件末尾
                 val sectionRegex = { v: String ->
                     Regex(
-                        "##\\s*\\[${Regex.escape(v)}][^\\n]*(?:\\r?\\n)+(.*?)(?=\\r?\\n(?:##|---)|\\z)",
+                        "##\\s*\\[?${Regex.escape(v)}[^\\n]*?(?:\\r?\\n)+(.*?)(?=\\r?\\n(?:## [^#]|---)|\\z)",
                         RegexOption.DOT_MATCHES_ALL
                     )
                 }
@@ -296,6 +303,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 // 如果当前版本没内容，尝试匹配 [未发布]
                 if (match == null) {
                     match = sectionRegex("未发布").find(fullContent)
+                }
+
+                // 如果还是没内容，尝试直接拿第一个 ## 标题下的内容（通常是最新版本）
+                if (match == null) {
+                    val fallbackRegex = Regex(
+                        "##\\s*[^\\n]+(?:\\r?\\n)+(.*?)(?=\\r?\\n(?:## [^#]|---)|\\z)",
+                        RegexOption.DOT_MATCHES_ALL
+                    )
+                    match = fallbackRegex.find(fullContent)
                 }
 
                 if (match != null) {

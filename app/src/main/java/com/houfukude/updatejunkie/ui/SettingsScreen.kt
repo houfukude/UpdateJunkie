@@ -61,6 +61,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import com.houfukude.updatejunkie.BuildConfig
 import com.houfukude.updatejunkie.R
@@ -69,6 +70,8 @@ import com.houfukude.updatejunkie.data.ThemeConfig
 import com.houfukude.updatejunkie.ui.components.ShizukuStatusCard
 import com.houfukude.updatejunkie.ui.theme.UpdateJunkieTheme
 import com.houfukude.updatejunkie.viewmodel.SettingsViewModel
+import com.mikepenz.markdown.m3.Markdown
+import com.mikepenz.markdown.m3.markdownTypography
 
 /**
  * 设置页的有状态入口。
@@ -620,10 +623,23 @@ fun SettingsScreenContent(
                             .heightIn(max = 400.dp)
                             .verticalScroll(scrollState)
                     ) {
-                        Text(
-                            text = state.content,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(8.dp)
+                        Markdown(
+                            content = state.content,
+                            modifier = Modifier.padding(8.dp),
+                            typography = markdownTypography(
+                                h1 = MaterialTheme.typography.headlineMedium,
+                                h2 = MaterialTheme.typography.headlineSmall,
+                                h3 = MaterialTheme.typography.titleLarge,
+                                h4 = MaterialTheme.typography.titleMedium,
+                                h5 = MaterialTheme.typography.titleSmall,
+                                h6 = MaterialTheme.typography.labelLarge,
+                                text = MaterialTheme.typography.bodyMedium,
+                                paragraph = MaterialTheme.typography.bodyMedium,
+                                list = MaterialTheme.typography.bodyMedium,
+                                bullet = MaterialTheme.typography.bodyMedium,
+                                code = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                                inlineCode = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp)
+                            )
                         )
                     }
                 },

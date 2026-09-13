@@ -53,6 +53,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.tv.material3.Button
 import androidx.tv.material3.ClickableSurfaceDefaults
@@ -70,6 +71,8 @@ import com.houfukude.updatejunkie.data.ThemeConfig
 import com.houfukude.updatejunkie.ui.components.ShizukuStatusCard
 import com.houfukude.updatejunkie.ui.theme.UpdateJunkieTvTheme
 import com.houfukude.updatejunkie.viewmodel.SettingsViewModel
+import com.mikepenz.markdown.m3.Markdown
+import com.mikepenz.markdown.m3.markdownTypography
 
 /**
  * 专为 Android TV 优化的设置页面。
@@ -542,7 +545,23 @@ fun TvSettingsScreenContent(
                             .heightIn(max = 300.dp)
                             .verticalScroll(rememberScrollState())
                     ) {
-                        Text(state.content)
+                        Markdown(
+                            content = state.content,
+                            typography = markdownTypography(
+                                h1 = MaterialTheme.typography.headlineMedium,
+                                h2 = MaterialTheme.typography.headlineSmall,
+                                h3 = MaterialTheme.typography.titleLarge,
+                                h4 = MaterialTheme.typography.titleMedium,
+                                h5 = MaterialTheme.typography.titleSmall,
+                                h6 = MaterialTheme.typography.labelLarge,
+                                text = MaterialTheme.typography.bodyMedium,
+                                paragraph = MaterialTheme.typography.bodyMedium,
+                                list = MaterialTheme.typography.bodyMedium,
+                                bullet = MaterialTheme.typography.bodyMedium,
+                                code = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                                inlineCode = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp)
+                            )
+                        )
                     }
                 },
                 confirmButton = {

@@ -103,6 +103,9 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
+    // Markdown Renderer
+    implementation(libs.multiplatform.markdown.renderer)
+    implementation(libs.multiplatform.markdown.m3)
 
     // Compose for TV dependencies
     implementation(libs.androidx.tv.material)
