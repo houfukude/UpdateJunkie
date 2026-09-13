@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.UpdateJunkie" parent="Theme.AppCompat.DayNight.NoActionBar" />
-
     <!-- SplashScreen Theme -->
     <style name="Theme.UpdateJunkie.Starting" parent="Theme.SplashScreen">
         <!-- 启动页背景色 -->
         <item name="windowSplashScreenBackground">?android:attr/colorBackground</item>
-        <!-- 启动图标 (可选，默认为应用图标) -->
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <!-- 启动图标：使用无背景的前景图 -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
         <!-- 启动页退出后切换到的主题 -->
         <item name="postSplashScreenTheme">@style/Theme.UpdateJunkie</item>
     </style>
+
+
+    <style name="Theme.UpdateJunkie" parent="Theme.AppCompat.DayNight.NoActionBar" />
 </resources>
